@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import math
 import random
 
-from tabular_robust.replaybuffer import ReplayBuffer
+from replaybuffer import ReplayBuffer
 
 EPS_START = 1
 EPS_END = 0.01
 
 TAU_START = 1
-TAU_END = 0.1
+TAU_END = 0.002
 
 
 class TabularQ(object):
@@ -20,7 +20,6 @@ class TabularQ(object):
         self.state_kind = state_kind
         self.action_kind = action_kind
         self.q_table = np.zeros((state_kind, action_kind), dtype = np.float32)
-        # self.q_table = np.random.randn(state_kind, action_kind)
         self.v_table = np.zeros((state_kind), dtype = np.float32)
 
     # state, action에 대한 Q-Value 값 리턴
@@ -35,16 +34,22 @@ class TabularQ(object):
         return self.q_table[state, action]
 
     # state에서 모든 action에 대한 Q-value 값을 벡터로 리턴
-    def get_state_values(self, state):
+    def get_v_values(self, state):
         if state < 0 or state >= self.state_kind:
             print("Wrong state position")
             return 0
 
-        return self.q_table[state]
+        return self.q_table[state].copy()
+
+    def get_v_value(self):
+        return self.v_table.copy()
+
+    def get_q_value(self):
+        return self.q_table.copy()
 
     # Q-value, V-value 업데이트 이때 Greedy policy를 가정하기 때문에 V-value는 max로 업데이트
     # 여기서 V-value 업데이트 한는 값을 behavior policy로 해야되나 아니면 Greedy로 해야 되나?
-    def update_q_value(self, state, action, update_value):
+    def update_value_function(self, state, action, update_value):
         if state < 0 or state >= self.state_kind:
             print("Wrong state position")
             return 0
@@ -54,25 +59,20 @@ class TabularQ(object):
         self.q_table[state, action] = update_value
         self.v_table[state] = max(self.v_table[state], update_value)
 
-    def get_v_value(self):
-        return self.v_table
-
-    def get_q_value(self):
-        return self.q_table
-
+    # 학습된 에이전트로 가져오기
     def push_q_table(self, q_table):
         self.q_table = q_table.copy()
         self.v_table = self.q_table.max(axis = 1)
 
     def print(self):
         print("--------------------")
-        for i in range(self.state_kind):
-            print(self.q_table[i])
+        for state in range(self.state_kind):
+            print(self.q_table[state])
         print("--------------------")
 
 
 class RobustQAgent(object):
-    def __init__(self, env, max_episode_num, r, q_table = None):
+    def __init__(self, env, max_episode_num, r = 0, q_table = None):
         self.GAMMA = 0.99
         self.BATCH_SIZE = 64
         self.BUFFER_SIZE = 20000
@@ -82,7 +82,7 @@ class RobustQAgent(object):
         self.PTM_STEP = 10000               # PTM 업데이트 스텝
         self.MAX_EPISODE_NUM = max_episode_num
 
-        self.TEST_STEP = 100
+        self.TEST_STEP = 1000
 
         self.env = env
         self.state_kind = env.observation_space.n
@@ -98,44 +98,42 @@ class RobustQAgent(object):
         self.save_epi_reward = []
         self.test_reward = 0
 
-    # epsilon = 0 => greedy
-    # epsilon = 1 => random
     def get_action(self, state, epsilon, mode = "epsilon_greedy"):
-        # print("Epsilon : ", epsilon)
+        # epsilon = 0 => greedy
+        # epsilon = 1 => random
         if mode == "epsilon_greedy":
             p = np.random.rand()
             if p < epsilon:
                 return np.random.randint(0, self.action_kind, size = 1)[0]
                 
-            state_value = self.robust_q.get_state_values(state)
-            max_index = np.argwhere(state_value == np.amax(state_value))
+            state_values = self.robust_q.get_v_values(state)
+            max_index = np.argwhere(state_values == np.amax(state_values))
             max_index = max_index.flatten().tolist()
             if len(max_index) == 1:
                 return max_index[0]
             else:
                 random.shuffle(max_index)
                 return max_index[0]
+
         elif mode == "boltzmann":
             p = np.random.rand()
-            state_value = np.array(self.robust_q.get_state_values(state).copy(), dtype = np.float64)
-            # print("Base distribution : ", state_value)
-            state_value = np.exp(state_value / epsilon) / np.sum(np.exp(state_value / epsilon))
-            for i in state_value:
-                if math.isnan(i):
+            state_values = np.array(self.robust_q.get_v_values(state), dtype = np.float64)
+            state_values = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+
+            for state in state_values:
+                if math.isnan(state):
                     print("There is nan in action value")
                     while(True):
                         x = 1
-            # print("Boltzmann distribution : ", state_value, " P : ", p)
+
             sum_value = 0
-            for i in range(len(state_value)):
-                sum_value = sum_value + state_value[i]
+            for i in range(len(state_values)):
+                sum_value = sum_value + state_values[i]
                 if p < sum_value:
                     return i
-            return len(state_value) - 1
+            return len(state_values) - 1
                 
         print("Wrong mode is selected")
-
-
 
     def q_learn(self, states, actions, q_targets):
         for i in range(states.shape[0]):
@@ -145,7 +143,7 @@ class RobustQAgent(object):
 
             current_q_value = self.robust_q(state, action)
             update_value = (1 - self.ALPHA) * current_q_value + self.ALPHA * q_target
-            self.robust_q.update_q_value(state, action, update_value)
+            self.robust_q.update_value_function(state, action, update_value)
 
     # 수정 필요
     def q_target(self, rewards, r_values, v_values, dones, R):
@@ -180,6 +178,10 @@ class RobustQAgent(object):
         a = - 1 / math.log(EPS_END / EPS_START)
         return EPS_START * math.exp(-episode_ratio / a)
 
+    def cal_tau(self, episode_ratio):
+        a = - 1 / math.log(TAU_END / TAU_START)
+        return EPS_START * math.exp(-episode_ratio / a)
+
     def cal_v_value(self, states):
         v_table = self.robust_q.get_v_value()
         state_value = []
@@ -188,8 +190,7 @@ class RobustQAgent(object):
 
         return np.array(state_value)
 
-    def test(self):
-        epsilon = 0
+    def test(self, mode):
         test_reward = []
         action_list = ["left", "down", "right", "up"]
         for ep in range(int(self.TEST_STEP)):
@@ -198,7 +199,8 @@ class RobustQAgent(object):
             time, episode_reward, done, truncated = 0, 0, False, False
             # print("Start Episode -------------------")
             while not done and not truncated:
-                action = self.get_action(state, TAU_END, mode = "boltzmann")
+                action = self.get_action(state, TAU_END, mode = mode)
+                # action = self.get_action(state, EPS_END, mode = "epsilon_greedy")
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 # print("Action : ", action_list[action]," Current State : ", next_state)
 
@@ -206,10 +208,12 @@ class RobustQAgent(object):
                 episode_reward += reward
                 time += 1
             # print("End  Episode -------------------")
-            print('TEST Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+            # print('TEST Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             test_reward.append(episode_reward)
         self.test_reward = np.mean(test_reward)
+
+        return self.test_reward
 
     def get_test_reward(self):
         return self.test_reward
@@ -225,17 +229,16 @@ class RobustQAgent(object):
             # 환경 초기화 및 초기 상태 관측
             state, _ = self.env.reset()
             # epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
-            # tau = (TAU_END - TAU_START) * (ep / self.MAX_EPISODE_NUM) + 1
-            # tau = min(tau, EPS_END)
-            # tau = EPS_END
-            tau = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
-            # print("tau", tau)
+
+            tau = (TAU_END - TAU_START) * (ep / self.MAX_EPISODE_NUM) + TAU_START
+            # tau = TAU_END
+            # tau = self.cal_tau(ep / self.MAX_EPISODE_NUM)
 
             if self.buffer.buffer_count() > self.PTM_STEP:
                 r = self.R
 
             while not done and not truncated:
-                action = self.get_action(state, tau, mode = "epsilon_greedy")
+                action = self.get_action(state, tau, mode = "boltzmann")
 
                 next_state, reward, done, truncated, _ = self.env.step(action)
 

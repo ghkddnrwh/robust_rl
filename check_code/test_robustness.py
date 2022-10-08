@@ -1,0 +1,81 @@
+from robust_q_learn import RobustQAgent
+import numpy as np
+import matplotlib.pyplot as plt
+import gym
+import os
+
+save_simulation = "data/attack_q/boltzmann_8map"
+map_name = "8x8"
+
+def main(slippery, r_list, perturb_list, transit_prob_list):
+    env_test_reward = []
+    for r in r_list:
+        simulation_name = "Robust_RL_R=" + str(r)
+        path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
+
+        env_name = 'FrozenLake-v1'
+
+        call_path = os.path.join(save_simulation, path_env_name, simulation_name)
+        q_table = np.load(os.path.join(call_path, "q_value.npy"))
+        q_table = q_table[:,0,:,:]
+        
+        perturb_reward = []
+        for perturb in perturb_list:
+            transit_prob_reward = []
+            for transit_prob in transit_prob_list:
+                test_reward = []
+                for q_value in q_table:
+                    env = gym.make(env_name, map_name = map_name, slippery_value = slippery, perturb = perturb)
+                    agent = RobustQAgent(env, max_episode_num = 1000, r = 0, q_table = q_value)
+
+                    agent.test("boltzmann")
+                    test_reward.append(agent.get_test_reward())
+
+                    print("Reward : ", test_reward)
+                transit_prob_reward.append(np.mean(np.array(test_reward)))
+            perturb_reward.append(transit_prob_reward)
+        env_test_reward.append(perturb_reward)
+        # plt.plot(perturb_list, perturb_reward, label = "R : %.2f"%r)
+    return env_test_reward
+    # plt.legend()
+    # plt.show()
+    # plt.title("8*8 Map Perturb Test Slippery : %.2f"%slippery)
+
+
+if __name__=="__main__":
+    slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
+    # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66]
+    r_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    # r_list = [0, 0.05, 0.1, 0.15]
+    # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2]
+    perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    transit_prob_list = [None]
+    # transit_prob_list = [[1, 0, 0, 0],
+    #                     [0, 1, 0, 0],
+    #                     [0, 0, 1, 0],
+    #                     [0, 0, 0, 1],
+    #                     [0.5, 0.5, 0, 0],
+    #                     [0.5, 0, 0.5, 0],
+    #                     [0.5, 0, 0, 0.5],
+    #                     [0, 0.5, 0.5, 0],
+    #                     [0, 0.5, 0, 0.5],
+    #                     [0, 0, 0.5, 0.5],
+    #                     [0.33, 0.33, 0.33, 0],
+    #                     [0.33, 0.33, 0, 0.33],
+    #                     [0.33, 0, 0.33, 0.33],
+    #                     [0, 0.33, 0.33, 0.33],
+    #                     [0.25, 0.25, 0.25, 0.25]
+    #                     ]
+
+    # slippery_list = [0.8, 0.7]
+    # r_list = [0, 0.05, 0.1]
+    # perturb_list = [0]
+
+    env_to_env_test_reward = []
+
+    for slippery in slippery_list:
+        test_reward = main(slippery, r_list, perturb_list, transit_prob_list)
+        env_to_env_test_reward.append(test_reward)
+    env_to_env_test_reward = np.reshape(np.array(env_to_env_test_reward), (len(slippery_list), len(r_list), len(perturb_list), len(transit_prob_list)))
+    print(env_to_env_test_reward)
+    np.save(os.path.join(save_simulation, "attack_q_perturbation"), env_to_env_test_reward)
