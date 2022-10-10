@@ -60,7 +60,7 @@ class TabularQ(object):
         if mode == "greedy":
             self.v_table[state] = max(self.v_table[state], update_value)
         elif mode == "mean":
-            self.v_table[state] = np.mean(self.q_table[state, :], axis = 0)
+            self.v_table[state] = np.mean(self.q_table[state, :])
         else:
             print("Wrong Mode is selected")
 
@@ -151,15 +151,15 @@ class RobustQAgent(object):
         self.save_epi_reward = []
         self.test_reward = 0
 
-    def q_learn(self, states, actions, q_targets, q_network):
+    def q_learn(self, states, actions, q_targets, q_network, mode = "greedy", alpha = 0.01):
         for i in range(states.shape[0]):
             state = states[i]
             action = actions[i]
             q_target = q_targets[i]
 
             current_q_value = q_network(state, action)
-            update_value = (1 - self.ALPHA) * current_q_value + self.ALPHA * q_target
-            q_network.update_value_function(state, action, update_value)
+            update_value = (1 - alpha) * current_q_value + alpha * q_target
+            q_network.update_value_function(state, action, update_value, mode)
 
     # 수정 필요
     def q_target(self, rewards, r_values, v_values, dones, R):
@@ -179,9 +179,22 @@ class RobustQAgent(object):
 
         return np.array(state_value)
 
-    def cal_epsilon(self, episode_ratio):
-        a = - 1 / math.log(EPS_END / EPS_START)
-        return EPS_START * math.exp(-episode_ratio / a)
+    def cal_epsilon(self, episode_ratio, mode = "exp"):
+        if mode == "exp":
+            a = - 1 / math.log(EPS_END / EPS_START)
+            return EPS_START * math.exp(-episode_ratio / a)
+        elif mode == "linear":
+            return (EPS_END - EPS_START) * (episode_ratio) + EPS_START
+        elif mode == "late_exp":
+            if episode_ratio < 0.5:
+                return 1
+            else:
+                episode_ratio = 2 * episode_ratio - 1
+                a = - 1 / math.log(EPS_END / EPS_START)
+            return EPS_START * math.exp(-episode_ratio / a)
+        else:
+            print("Wrong mode selected")
+            return 0
 
     def cal_tau(self, episode_ratio, mode = "linear"):
         if mode == "linear":
@@ -229,7 +242,7 @@ class RobustQAgent(object):
             # 환경 초기화 및 초기 상태 관측
             state, _ = self.env.reset()
             self.attack_env.reset()
-            epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
+            epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM, mode = "exp")
             tau = self.cal_tau(ep / self.MAX_EPISODE_NUM, mode = "linear")
 
             if self.buffer.buffer_count() > self.ATTACK_STEP:
@@ -245,7 +258,7 @@ class RobustQAgent(object):
 
                 done = done or truncated
                 attack_done = attack_done or attack_truncated
-                attack_reward = - attack_reward     # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
+                attack_reward = - 10 * attack_reward     # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
 
                 self.buffer.add_buffer(state, action, reward, next_state, done, attack_action, attack_reward, attack_next_state, attack_done)
 
@@ -263,7 +276,7 @@ class RobustQAgent(object):
                     attack_y_i = self.q_target(attack_rewards, r_values, attack_v_values, attack_dones, 0)
 
                     self.q_learn(states, actions, y_i, self.robust_q)
-                    self.q_learn(states, attack_actions, attack_y_i, self.attack_q)
+                    self.q_learn(states, attack_actions, attack_y_i, self.attack_q, mode = "mean", alpha = 0.1)
 
                     # 타깃 신경망 업데이트
 
@@ -274,7 +287,11 @@ class RobustQAgent(object):
 
             # 에피소드마다 결과 보상값 출력
             self.robust_q.print()
+            self.attack_q.print()
+            print(self.robust_q.get_v_value())
+            print(self.attack_q.get_v_value())
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+            # print("Epsilon : ", epsilon)
 
             self.save_epi_time.append(time)
             self.save_epi_reward.append(episode_reward)

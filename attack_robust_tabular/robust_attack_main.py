@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
+np.set_printoptions(formatter={'float_kind': lambda x: "{0:0.2f}".format(x)})
+
 def main(slippery = 0):
     R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     R = [0]
@@ -12,7 +14,7 @@ def main(slippery = 0):
         path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
         env_name = 'FrozenLake-v1'
 
-        save_path = os.path.join("test", "test4", path_env_name, simulation_name)
+        save_path = os.path.join("test", "iisl1", "test33", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -69,7 +71,7 @@ def main(slippery = 0):
     # agent.plot_result(max_episode_num, interval)
 
 if __name__=="__main__":
-    slippery = [0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
+    slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
     slippery = [0.66]
     for slip in slippery:
         main(slip)
