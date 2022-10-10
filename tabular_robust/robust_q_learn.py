@@ -93,6 +93,7 @@ class RobustQAgent(object):
             self.robust_q.push_q_table(q_table)
         self.buffer = ReplayBuffer(self.BUFFER_SIZE)
         self.PTM = np.zeros((self.state_kind, self.state_kind))     # state to state transition의 가능성을 판단하는 행렬
+        self.PTM_for_previous = np.zeros((self.state_kind))
 
         self.save_epi_time = []
         self.save_epi_reward = []
@@ -174,6 +175,54 @@ class RobustQAgent(object):
 
         return np.array(r_values)
 
+    # Just for test
+    def cal_r_value_random(self, states):
+        r_values = []
+        v_value = self.robust_q.get_v_value()
+        for state in states:
+            r_value_list = []
+            r_value = 0
+            update_yet = True
+            ptv = self.PTM[state]
+            for next_state, probability in enumerate(ptv):
+                if probability == 0:
+                    continue
+                r_value_list.append(v_value[next_state])
+                if update_yet:
+                    update_yet = False
+                    r_value = v_value[next_state]
+                else:
+                    r_value = min(r_value, v_value[next_state])
+            # print("R_Value List : ", r_value_list)
+            random.shuffle(r_value_list)
+            if len(r_value_list) == 0:
+                r_values.append(0)
+            else:
+                r_values.append(r_value_list[0])
+
+        return np.array(r_values)
+
+    def cal_r_value_for_previous(self, states):
+        r_values = []
+        v_value = self.robust_q.get_v_value()
+        possible_v_value = []
+        for next_state, probability in enumerate(self.PTM_for_previous):
+            if probability == 0:
+                continue
+            if v_value[next_state] == 0:
+                continue
+            possible_v_value.append(v_value[next_state])
+        if len(possible_v_value) == 0:
+            r_values.append(0)
+        else:
+            r_values.append(np.min(possible_v_value))
+
+        # print("Hello")
+        # print(self.PTM_for_previous)
+        # print(np.resize(r_values, len(states)))
+
+        return np.resize(r_values, len(states))
+
     def cal_epsilon(self, episode_ratio):
         a = - 1 / math.log(EPS_END / EPS_START)
         return EPS_START * math.exp(-episode_ratio / a)
@@ -199,8 +248,10 @@ class RobustQAgent(object):
             time, episode_reward, done, truncated = 0, 0, False, False
             # print("Start Episode -------------------")
             while not done and not truncated:
-                action = self.get_action(state, TAU_END, mode = mode)
-                # action = self.get_action(state, EPS_END, mode = "epsilon_greedy")
+                if mode == "boltzmann":
+                    action = self.get_action(state, TAU_END, mode = mode)
+                elif mode == "epsilon_greedy":
+                    action = self.get_action(state, EPS_END, mode = "epsilon_greedy")
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 # print("Action : ", action_list[action]," Current State : ", next_state)
 
@@ -244,6 +295,7 @@ class RobustQAgent(object):
 
                 done = done or truncated
                 self.PTM[state, next_state] = 1
+                self.PTM_for_previous[state] = 1
 
                 self.buffer.add_buffer(state, action, reward, next_state, done)
 
@@ -253,7 +305,7 @@ class RobustQAgent(object):
                     # 리플레이 버퍼에서 샘플 무작위 추출
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
-                    r_values = self.cal_r_value(states)
+                    r_values = self.cal_r_value_for_previous(states)
                     v_values = self.cal_v_value(next_states)
 
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)

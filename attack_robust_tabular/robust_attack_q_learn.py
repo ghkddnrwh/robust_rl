@@ -50,20 +50,31 @@ class TabularQ(object):
 
     # Q-value, V-value 업데이트 이때 Greedy policy를 가정하기 때문에 V-value는 max로 업데이트
     # 여기서 V-value 업데이트 한는 값을 behavior policy로 해야되나 아니면 Greedy로 해야 되나?
-    def update_value_function(self, state, action, update_value):
+    def update_value_function(self, state, action, update_value, mode = "greedy"):
         if state < 0 or state >= self.state_kind:
             print("Wrong state position")
             return 0
         if action < 0 or action >= self.action_kind:
             print("Wrong action position")
             return 0
+
         self.q_table[state, action] = update_value
-        self.v_table[state] = max(self.v_table[state], update_value)
+        if mode == "greedy":
+            self.v_table[state] = max(self.v_table[state], update_value)
+        elif mode == "mean":
+            self.v_table[state] = np.mean(self.q_table[state, :], axis = 0)
+        else:
+            print("Wrong Mode is selected")
 
     # 학습된 에이전트로 가져오기
-    def push_q_table(self, q_table):
+    def push_q_table(self, q_table, mode = "greedy"):
         self.q_table = q_table.copy()
-        self.v_table = self.q_table.max(axis = 1)
+        if mode == "greedy":
+            self.v_table = self.q_table.max(axis = 1)
+        elif mode == "mean":
+            self.v_table = np.mean(self.q_table, axis = 1)
+        else:
+            print("Wrong mode is selected")
 
     def get_action(self, state, epsilon, mode = "epsilon_greedy"):
         # epsilon = 0 => greedy
@@ -179,30 +190,28 @@ class RobustQAgent(object):
             return (TAU_END - TAU_START) * (episode_ratio) + TAU_START
         elif mode == "exp":
             a = - 1 / math.log(TAU_END / TAU_START)
-            return EPS_START * math.exp(-episode_ratio / a)
+            return TAU_START * math.exp(-episode_ratio / a)
         else:
             print("Wrong mode selected")
             return 0
 
     def test(self, mode):
         test_reward = []
-        action_list = ["left", "down", "right", "up"]
-        for ep in range(int(self.TEST_STEP)):
+        for _ in range(int(self.TEST_STEP)):
             state, _ = self.env.reset()
-            # print("Initial State : ", state)
             time, episode_reward, done, truncated = 0, 0, False, False
-            # print("Start Episode -------------------")
+
             while not done and not truncated:
-                action = self.robust_q.get_action(state, TAU_END, mode = mode)
-                # action = self.get_action(state, EPS_END, mode = "epsilon_greedy")
+                if mode == "boltzmann":
+                    action = self.robust_q.get_action(state, TAU_END, mode = mode)
+                elif mode == "epsilon_greedy":
+                    action = self.robust_q.get_action(state, EPS_END, mode = mode)
+
                 next_state, reward, done, truncated, _ = self.env.step(action)
-                # print("Action : ", action_list[action]," Current State : ", next_state)
 
                 state = next_state
                 episode_reward += reward
                 time += 1
-            # print("End  Episode -------------------")
-            # print('TEST Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             test_reward.append(episode_reward)
         self.test_reward = np.mean(test_reward)
@@ -222,7 +231,7 @@ class RobustQAgent(object):
             # 환경 초기화 및 초기 상태 관측
             state, _ = self.env.reset()
             self.attack_env.reset()
-            # epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
+            epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
             tau = self.cal_tau(ep / self.MAX_EPISODE_NUM, mode = "linear")
 
             if self.buffer.buffer_count() > self.ATTACK_STEP:
@@ -230,7 +239,7 @@ class RobustQAgent(object):
 
             while not done and not truncated:
                 action = self.robust_q.get_action(state, tau, mode = "boltzmann")
-                attack_action = self.attack_q.get_action(state, 0, mode = "epsilon_greedy")
+                attack_action = self.attack_q.get_action(state, epsilon, mode = "epsilon_greedy")
 
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 self.attack_env.set_state(state)

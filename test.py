@@ -1,34 +1,11 @@
-import gym
+import enum
+# import gym
 from copy import deepcopy
+import numpy as np
 
-env = gym.make("FrozenLake-v1", slippery_value = 0)
+a = [1]
 
-env.reset()
-next_state, reward, done, truncated, _ = env.step(2)
-print(next_state, reward, done, truncated)
+a = np.array(a)
 
-env.set_state(6)
-next_state, reward, done, truncated, _ = env.step(1)
-print(next_state, reward, done, truncated)
-
-next_state, reward, done, truncated, _ = env.step(1)
-print(next_state, reward, done, truncated)
-
-next_state, reward, done, truncated, _ = env.step(1)
-print(next_state, reward, done, truncated)
-
-next_state, reward, done, truncated, _ = env.step(2)
-print(next_state, reward, done, truncated)
-
-env.set_state(6)
-next_state, reward, done, truncated, _ = env.step(1)
-print(next_state, reward, done, truncated)
-
-next_state, reward, done, truncated, _ = env.step(1)
-print(next_state, reward, done, truncated)
-
-next_state, reward, done, truncated, _ = env.step(1)
-print(next_state, reward, done, truncated)
-
-next_state, reward, done, truncated, _ = env.step(2)
-print(next_state, reward, done, truncated)
+a = np.resize(a, (10))
+print(len(a))
