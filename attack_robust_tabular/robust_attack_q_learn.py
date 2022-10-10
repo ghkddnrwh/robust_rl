@@ -276,7 +276,7 @@ class RobustQAgent(object):
                     attack_y_i = self.q_target(attack_rewards, r_values, attack_v_values, attack_dones, 0)
 
                     self.q_learn(states, actions, y_i, self.robust_q)
-                    self.q_learn(states, attack_actions, attack_y_i, self.attack_q, mode = "mean", alpha = 0.1)
+                    self.q_learn(states, attack_actions, attack_y_i, self.attack_q, mode = "mean", alpha = 0.05)
 
                     # 타깃 신경망 업데이트
 
@@ -286,10 +286,10 @@ class RobustQAgent(object):
                 time += 1
 
             # 에피소드마다 결과 보상값 출력
-            self.robust_q.print()
+            # self.robust_q.print()
             self.attack_q.print()
-            print(self.robust_q.get_v_value())
-            print(self.attack_q.get_v_value())
+            # print(self.robust_q.get_v_value())
+            # print(self.attack_q.get_v_value())
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
             # print("Epsilon : ", epsilon)
 

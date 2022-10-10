@@ -8,13 +8,13 @@ np.set_printoptions(formatter={'float_kind': lambda x: "{0:0.2f}".format(x)})
 
 def main(slippery = 0):
     R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    R = [0]
+    # R = [0]
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
         env_name = 'FrozenLake-v1'
 
-        save_path = os.path.join("test", "iisl1", "test33", path_env_name, simulation_name)
+        save_path = os.path.join("data", "attack_q", "epsilon_greedy", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -25,7 +25,7 @@ def main(slippery = 0):
             print("Something wrong")
             return 0
 
-        train_num = 1
+        train_num = 5
         max_episode_num = 5000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
@@ -47,10 +47,10 @@ def main(slippery = 0):
             total_reward.append(reward)
             q_table.append(q_value)
 
-            boltzmann_reward = agent.test("boltzmann").copy()
-            epslion_reward = agent.test("epsilon_greedy").copy()
-            print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
-            print("EPSILON_TEST_REWARD : ", epslion_reward)
+            # boltzmann_reward = agent.test("boltzmann").copy()
+            # epslion_reward = agent.test("epsilon_greedy").copy()
+            # print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
+            # print("EPSILON_TEST_REWARD : ", epslion_reward)
 
         # print(total_reward)
         # mean_total_reward = np.mean(total_reward, axis = 0)
@@ -72,6 +72,6 @@ def main(slippery = 0):
 
 if __name__=="__main__":
     slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
-    slippery = [0.66]
+    # slippery = [0.66]
     for slip in slippery:
         main(slip)
