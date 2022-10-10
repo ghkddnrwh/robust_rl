@@ -10,7 +10,7 @@ slippery = 0
 
 action = ["<", "v", ">", "^"]
 
-save_path_name = os.path.join("data", "attack_q", "boltzmann_8map")
+save_path_name = os.path.join("test", "test3")
 env_name = 'FrozenLake-v1'
 # total_result = np.load(os.path.join("6map_simulation", "total_result.npy"))
 
