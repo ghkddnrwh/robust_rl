@@ -1,10 +1,10 @@
-from robust_q_learn import RobustQAgent
+from tabular_robust.robust_q_learn import RobustQAgent
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = "data/attack_q/boltzmann_8map"
+save_simulation = os.path.join("data", "previous_robust_rl")
 map_name = "8x8"
 
 def main(slippery, r_list, perturb_list, transit_prob_list):
@@ -17,7 +17,9 @@ def main(slippery, r_list, perturb_list, transit_prob_list):
 
         call_path = os.path.join(save_simulation, path_env_name, simulation_name)
         q_table = np.load(os.path.join(call_path, "q_value.npy"))
-        q_table = q_table[:,0,:,:]
+        # q_table = q_table[:,0,:,:]
+        # print(q_table.shape)
+        # break
         
         perturb_reward = []
         for perturb in perturb_list:
@@ -78,4 +80,4 @@ if __name__=="__main__":
         env_to_env_test_reward.append(test_reward)
     env_to_env_test_reward = np.reshape(np.array(env_to_env_test_reward), (len(slippery_list), len(r_list), len(perturb_list), len(transit_prob_list)))
     print(env_to_env_test_reward)
-    np.save(os.path.join(save_simulation, "attack_q_perturbation"), env_to_env_test_reward)
+    np.save(os.path.join(save_simulation, "total_reward"), env_to_env_test_reward)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 import random
 
-from replaybuffer import ReplayBuffer
+from tabular_robust.replaybuffer import ReplayBuffer
 
 EPS_START = 1
 EPS_END = 0.01
