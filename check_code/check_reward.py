@@ -8,12 +8,15 @@ import os
 
 from tabular_robust.robust_q_learn import RobustQAgent
 
+save_path_name = os.path.join("test", "test3")
 
-save_path_name = os.path.join("data", "previous_robust_rl")
 map_name = "8x8"
 
 slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
 r_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+
+slippery_list = [0.66]
+r_list = [0]
 
 for r in range(len(r_list)):
     r_boltzmann_reward = []
