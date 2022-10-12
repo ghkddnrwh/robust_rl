@@ -6,9 +6,9 @@ import gym
 import os
 
 
-save_simulation = "data/attack_q/boltzmann_8map"
+save_simulation = os.path.join("data", "attack_q", "epsilon_greedy")
 map_name = "8x8"
-data_name = "attack_q_perturbation.npy"
+data_name = "total_reward.npy"
 
 if __name__=="__main__":
     slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
@@ -16,7 +16,7 @@ if __name__=="__main__":
     r_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     # r_list = [0, 0.05, 0.1, 0.15, 0.2]
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2]
+    # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2, 0.23, 0.27, 0.30]
 
     # transit_prob_list = [[1, 0, 0, 0],
     #                     [0, 1, 0, 0],
@@ -37,13 +37,16 @@ if __name__=="__main__":
     transit_prob_list = [None]
 
     total_reward = np.load(os.path.join(save_simulation, data_name))
+    print(total_reward.shape)
     for slip_index in range(len(slippery_list)):
         print(total_reward.shape)
 
         fig = plt.subplot(3, 4, slip_index + 1)
         for r_index in range(total_reward.shape[1]):
-            # print(np.mean(total_reward[slip_index, r_index, :, :], axis = 3))
-            plt.plot(perturb_list, np.mean(total_reward[slip_index, r_index, :, :], axis = 1) - np.mean(total_reward[slip_index, r_index, :, :], axis = 1)[0], label = "R = %.2f"%r_list[r_index])
+            plot_data = total_reward[slip_index, r_index, :, 0]
+            ref_data = total_reward[slip_index, r_index, 0, 0]
+            # plot_data -= ref_data
+            plt.plot(perturb_list, plot_data, label = "R = %.2f"%r_list[r_index])
             plt.title("Slippery Value : %.2f"%slippery_list[slip_index])
             # plt.xlabel("Perturb Probability")
             # print("----------------")
