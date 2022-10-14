@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = os.path.join("data", "previous_robust_rl")
+save_simulation = os.path.join("data", "attack_q", "epsilon_greedy")
 map_name = "8x8"
 
 def main(slippery, r_list, perturb_list, transit_prob_list):
@@ -17,7 +17,7 @@ def main(slippery, r_list, perturb_list, transit_prob_list):
 
         call_path = os.path.join(save_simulation, path_env_name, simulation_name)
         q_table = np.load(os.path.join(call_path, "q_value.npy"))
-        # q_table = q_table[:,0,:,:]
+        q_table = q_table[:,0,:,:]
         # print(q_table.shape)
         # break
         

@@ -14,7 +14,7 @@ def main(slippery = 0):
         path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
         env_name = 'FrozenLake-v1'
 
-        save_path = os.path.join("data", "attack_q", "epsilon_greedy", path_env_name, simulation_name)
+        save_path = os.path.join("data", "attack_q", "random", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -52,9 +52,6 @@ def main(slippery = 0):
             # print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
             # print("EPSILON_TEST_REWARD : ", epslion_reward)
 
-        # print(total_reward)
-        # mean_total_reward = np.mean(total_reward, axis = 0)
-
         total_time = np.array(total_time)
         total_reward = np.array(total_reward)
         q_table = np.array(q_table)
@@ -64,9 +61,6 @@ def main(slippery = 0):
         np.savetxt(os.path.join(save_path, "time.txt"), total_time)
         np.savetxt(os.path.join(save_path, "reward.txt"), total_reward)
         np.save(os.path.join(save_path, "q_value"), q_table)
-
-    # plt.plot(mean_total_reward)
-    # plt.show()
 
     # agent.plot_result(max_episode_num, interval)
 

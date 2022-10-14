@@ -287,11 +287,8 @@ class RobustQAgent(object):
 
             # 에피소드마다 결과 보상값 출력
             # self.robust_q.print()
-            self.attack_q.print()
-            # print(self.robust_q.get_v_value())
-            # print(self.attack_q.get_v_value())
+            # self.attack_q.print()
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
-            # print("Epsilon : ", epsilon)
 
             self.save_epi_time.append(time)
             self.save_epi_reward.append(episode_reward)
