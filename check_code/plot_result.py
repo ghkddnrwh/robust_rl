@@ -8,14 +8,15 @@ import os
 
 save_simulation = os.path.join("data", "attack_q", "epsilon_greedy")
 map_name = "8x8"
-data_name = "total_reward.npy"
+data_name = "total_reward_for_global_perturbation.npy"
 
 if __name__=="__main__":
     slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66]
     r_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     # r_list = [0, 0.05, 0.1, 0.15, 0.2]
-    perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    # perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    perturb_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
     # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2, 0.23, 0.27, 0.30]
 
     # transit_prob_list = [[1, 0, 0, 0],
@@ -45,7 +46,7 @@ if __name__=="__main__":
         for r_index in range(total_reward.shape[1]):
             plot_data = total_reward[slip_index, r_index, :, 0]
             ref_data = total_reward[slip_index, r_index, 0, 0]
-            # plot_data -= ref_data
+            plot_data -= ref_data
             plt.plot(perturb_list, plot_data, label = "R = %.2f"%r_list[r_index])
             plt.title("Slippery Value : %.2f"%slippery_list[slip_index])
             # plt.xlabel("Perturb Probability")
@@ -55,7 +56,7 @@ if __name__=="__main__":
 
     plt.legend()
     plt.xlabel("Perturbation Probability")
-    plt.suptitle("8*8 Map Mean of Transition Probability (Absolute Reward)")
+    plt.suptitle("8*8 Attack Q to Global Perturbation (Relative Reward)")
     plt.show()
     # plt.savefig("image/8*8 Map Slippery Value : %.2f.png"%slippery_list[slip_index], dpi = 200)
     plt.clf()

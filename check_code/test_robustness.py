@@ -50,7 +50,8 @@ if __name__=="__main__":
     r_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     # r_list = [0, 0.05, 0.1, 0.15]
     # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2]
-    perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    # perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    perturb_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
     transit_prob_list = [None]
     # transit_prob_list = [[1, 0, 0, 0],
     #                     [0, 1, 0, 0],
@@ -80,4 +81,4 @@ if __name__=="__main__":
         env_to_env_test_reward.append(test_reward)
     env_to_env_test_reward = np.reshape(np.array(env_to_env_test_reward), (len(slippery_list), len(r_list), len(perturb_list), len(transit_prob_list)))
     print(env_to_env_test_reward)
-    np.save(os.path.join(save_simulation, "total_reward"), env_to_env_test_reward)
+    np.save(os.path.join(save_simulation, "total_reward_for_global_perturbation"), env_to_env_test_reward)
