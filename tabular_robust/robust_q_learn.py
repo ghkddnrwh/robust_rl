@@ -311,6 +311,7 @@ class RobustQAgent(object):
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
                     r_values = self.cal_r_value_for_previous(states)
+                    # r_values = self.cal_r_value(states)
                     v_values = self.cal_v_value(next_states)
 
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)
