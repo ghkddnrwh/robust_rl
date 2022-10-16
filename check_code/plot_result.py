@@ -49,7 +49,7 @@ if __name__=="__main__":
         for r_index in range(total_reward.shape[1]):
             plot_data = total_reward[slip_index, r_index, :, 0]
             ref_data = total_reward[slip_index, r_index, 0, 0]
-            plot_data -= ref_data
+            # plot_data -= ref_data
             plt.plot(perturb_list, plot_data, label = "R = %.2f"%r_list[r_index])
             plt.title("Slippery Value : %.2f"%slippery_list[slip_index])
             # plt.xlabel("Perturb Probability")

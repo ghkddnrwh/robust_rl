@@ -78,5 +78,4 @@ if __name__=="__main__":
         test_reward = main(slippery, r_list, perturb_list, transit_prob_list)
         env_to_env_test_reward.append(test_reward)
     env_to_env_test_reward = np.reshape(np.array(env_to_env_test_reward), (len(slippery_list), len(r_list), len(perturb_list), len(transit_prob_list)))
-
     np.save(os.path.join(save_simulation, "total_reward_for_local_perturbation"), env_to_env_test_reward)
