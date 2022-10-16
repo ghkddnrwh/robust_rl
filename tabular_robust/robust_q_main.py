@@ -5,14 +5,14 @@ import gym
 import os
 
 def main(slippery = 0):
-    # R = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
+    R = [0, 0.02, 0.04]
     # R = [0]
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         path_env_name = "Taxi-v3_slipery=" + str(slippery)
         env_name = 'Taxi-v3'
 
-        save_path = os.path.join("test", "iisl2", "test7", path_env_name, simulation_name)
+        save_path = os.path.join("data", "taxi", "boltzmann", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -23,16 +23,13 @@ def main(slippery = 0):
             print("Something wrong")
             return 0
 
-        train_num = 3
+        train_num = 5
         max_episode_num = 5000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
         total_time = []
         total_reward = []
         q_table = []
-
-        boltzmann_reward_list = []
-        epslion_reward_list = []
 
         for _ in range(train_num):
             env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
@@ -48,20 +45,16 @@ def main(slippery = 0):
             total_reward.append(reward)
             q_table.append(q_value)
 
-            boltzmann_reward = agent.test("boltzmann").copy()
-            epslion_reward = agent.test("epsilon_greedy").copy()
-            print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
-            print("EPSILON_TEST_REWARD : ", epslion_reward)
-            boltzmann_reward_list.append(boltzmann_reward)
-            epslion_reward_list.append(epslion_reward)
+            # boltzmann_reward = agent.test("boltzmann").copy()
+            # epslion_reward = agent.test("epsilon_greedy").copy()
+            # print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
+            # print("EPSILON_TEST_REWARD : ", epslion_reward)
 
         total_time = np.array(total_time)
         total_reward = np.array(total_reward)
         q_table = np.array(q_table)
 
         print(q_table)
-        print("Boltzmann Reward : ", boltzmann_reward_list)
-        print("Epsilon Reward : ", epslion_reward_list)
 
         np.savetxt(os.path.join(save_path, "time.txt"), total_time)
         np.savetxt(os.path.join(save_path, "reward.txt"), total_reward)
