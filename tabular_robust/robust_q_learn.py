@@ -295,12 +295,15 @@ class RobustQAgent(object):
 
             while not done and not truncated:
                 action = self.get_action(state, tau, mode = "boltzmann")
+                # action = self.get_action(state, epsilon, mode = "epsilon_greedy")
 
                 next_state, reward, done, truncated, _ = self.env.step(action)
 
                 done = done or truncated
                 self.PTM[state, next_state] = 1
                 self.PTM_for_previous[state] = 1
+
+                reward = reward / 20
 
                 self.buffer.add_buffer(state, action, reward, next_state, done)
 
@@ -310,8 +313,8 @@ class RobustQAgent(object):
                     # 리플레이 버퍼에서 샘플 무작위 추출
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
-                    r_values = self.cal_r_value_for_previous(states)
-                    # r_values = self.cal_r_value(states)
+                    # r_values = self.cal_r_value_for_previous(states)
+                    r_values = self.cal_r_value(states)
                     v_values = self.cal_v_value(next_states)
 
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)

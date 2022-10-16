@@ -5,14 +5,14 @@ import gym
 import os
 
 def main(slippery = 0):
-    R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    # R = [0.15]
+    # R = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
+    # R = [0]
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
-        path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
-        env_name = 'FrozenLake-v1'
+        path_env_name = "Taxi-v3_slipery=" + str(slippery)
+        env_name = 'Taxi-v3'
 
-        save_path = os.path.join("paper", "previous", path_env_name, simulation_name)
+        save_path = os.path.join("test", "iisl2", "test7", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -23,7 +23,7 @@ def main(slippery = 0):
             print("Something wrong")
             return 0
 
-        train_num = 20
+        train_num = 3
         max_episode_num = 5000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
@@ -31,8 +31,11 @@ def main(slippery = 0):
         total_reward = []
         q_table = []
 
+        boltzmann_reward_list = []
+        epslion_reward_list = []
+
         for _ in range(train_num):
-            env = gym.make(env_name, map_name = "8x8", slippery_value = slippery)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
+            env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
             agent = RobustQAgent(env, max_episode_num, r)   # A2C 에이전트 객체
 
         # 학습 진행
@@ -45,16 +48,20 @@ def main(slippery = 0):
             total_reward.append(reward)
             q_table.append(q_value)
 
-            # boltzmann_reward = agent.test("boltzmann").copy()
-            # epslion_reward = agent.test("epsilon_greedy").copy()
-            # print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
-            # print("EPSILON_TEST_REWARD : ", epslion_reward)
+            boltzmann_reward = agent.test("boltzmann").copy()
+            epslion_reward = agent.test("epsilon_greedy").copy()
+            print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
+            print("EPSILON_TEST_REWARD : ", epslion_reward)
+            boltzmann_reward_list.append(boltzmann_reward)
+            epslion_reward_list.append(epslion_reward)
 
         total_time = np.array(total_time)
         total_reward = np.array(total_reward)
         q_table = np.array(q_table)
 
         print(q_table)
+        print("Boltzmann Reward : ", boltzmann_reward_list)
+        print("Epsilon Reward : ", epslion_reward_list)
 
         np.savetxt(os.path.join(save_path, "time.txt"), total_time)
         np.savetxt(os.path.join(save_path, "reward.txt"), total_reward)
@@ -63,7 +70,7 @@ def main(slippery = 0):
     # agent.plot_result(max_episode_num, interval)
 
 if __name__=="__main__":
-    slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
-    # slippery = [0.66]
+    # slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
+    slippery = [0]
     for slip in slippery:
         main(slip)
