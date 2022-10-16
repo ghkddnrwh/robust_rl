@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-
-save_simulation = os.path.join("data", "attack_q", "random")
+save_simulation = os.path.join("data", "previous_robust_rl")
 map_name = "8x8"
 data_name = "total_reward_for_local_perturbation.npy"
 
@@ -17,6 +16,7 @@ if __name__=="__main__":
     # r_list = [0, 0.05, 0.1, 0.15, 0.2]
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     # perturb_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
+
     # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2, 0.23, 0.27, 0.30]
 
     # transit_prob_list = [[1, 0, 0, 0],
@@ -56,7 +56,7 @@ if __name__=="__main__":
 
     plt.legend()
     plt.xlabel("Perturbation Probability")
-    plt.suptitle("8*8 Attack Q to Global Perturbation (Relative Reward)")
+    plt.suptitle("8*8 Previous to Global Perturbation (Absolute Reward)")
     plt.show()
     # plt.savefig("image/8*8 Map Slippery Value : %.2f.png"%slippery_list[slip_index], dpi = 200)
     plt.clf()

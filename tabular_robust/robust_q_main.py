@@ -6,13 +6,13 @@ import os
 
 def main(slippery = 0):
     R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    R = [0.15]
+    # R = [0.15]
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
         env_name = 'FrozenLake-v1'
 
-        save_path = os.path.join("test", "test1", path_env_name, simulation_name)
+        save_path = os.path.join("paper", "previous", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -23,7 +23,7 @@ def main(slippery = 0):
             print("Something wrong")
             return 0
 
-        train_num = 5
+        train_num = 20
         max_episode_num = 5000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
@@ -50,9 +50,6 @@ def main(slippery = 0):
             # print("BOLTZMANN_TEST_REWARD : ", boltzmann_reward)
             # print("EPSILON_TEST_REWARD : ", epslion_reward)
 
-        # print(total_reward)
-        # mean_total_reward = np.mean(total_reward, axis = 0)
-
         total_time = np.array(total_time)
         total_reward = np.array(total_reward)
         q_table = np.array(q_table)
@@ -63,13 +60,10 @@ def main(slippery = 0):
         np.savetxt(os.path.join(save_path, "reward.txt"), total_reward)
         np.save(os.path.join(save_path, "q_value"), q_table)
 
-    # plt.plot(mean_total_reward)
-    # plt.show()
-
     # agent.plot_result(max_episode_num, interval)
 
 if __name__=="__main__":
     slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
-    slippery = [0.66]
+    # slippery = [0.66]
     for slip in slippery:
         main(slip)

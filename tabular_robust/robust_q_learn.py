@@ -92,7 +92,7 @@ class RobustQAgent(object):
             self.robust_q.push_q_table(q_table)
         self.buffer = ReplayBuffer(self.BUFFER_SIZE)
         self.PTM = np.zeros((self.state_kind, self.state_kind))     # state to state transition의 가능성을 판단하는 행렬
-        self.PTM_for_previous = np.zeros((self.state_kind))
+        self.PTM_for_previous = np.zeros((self.state_kind))         # 이전 Robust RL 구현을 위해 추가한 vector
 
         self.save_epi_time = []
         self.save_epi_reward = []
@@ -216,19 +216,34 @@ class RobustQAgent(object):
         else:
             r_values.append(np.min(possible_v_value))
 
-        # print("Hello")
-        # print(self.PTM_for_previous)
-        # print(np.resize(r_values, len(states)))
-
         return np.resize(r_values, len(states))
 
-    def cal_epsilon(self, episode_ratio):
-        a = - 1 / math.log(EPS_END / EPS_START)
-        return EPS_START * math.exp(-episode_ratio / a)
+    def cal_epsilon(self, episode_ratio, mode = "exp"):
+        if mode == "exp":
+            a = - 1 / math.log(EPS_END / EPS_START)
+            return EPS_START * math.exp(-episode_ratio / a)
+        elif mode == "linear":
+            return (EPS_END - EPS_START) * (episode_ratio) + EPS_START
+        elif mode == "late_exp":
+            if episode_ratio < 0.5:
+                return 1
+            else:
+                episode_ratio = 2 * episode_ratio - 1
+                a = - 1 / math.log(EPS_END / EPS_START)
+            return EPS_START * math.exp(-episode_ratio / a)
+        else:
+            print("Wrong mode selected")
+            return 0
 
-    def cal_tau(self, episode_ratio):
-        a = - 1 / math.log(TAU_END / TAU_START)
-        return EPS_START * math.exp(-episode_ratio / a)
+    def cal_tau(self, episode_ratio, mode = "linear"):
+        if mode == "linear":
+            return (TAU_END - TAU_START) * (episode_ratio) + TAU_START
+        elif mode == "exp":
+            a = - 1 / math.log(TAU_END / TAU_START)
+            return TAU_START * math.exp(-episode_ratio / a)
+        else:
+            print("Wrong mode selected")
+            return 0
 
     def cal_v_value(self, states):
         v_table = self.robust_q.get_v_value()
@@ -240,25 +255,19 @@ class RobustQAgent(object):
 
     def test(self, mode):
         test_reward = []
-        action_list = ["left", "down", "right", "up"]
-        for ep in range(int(self.TEST_STEP)):
+        for _ in range(int(self.TEST_STEP)):
             state, _ = self.env.reset()
-            # print("Initial State : ", state)
             time, episode_reward, done, truncated = 0, 0, False, False
-            # print("Start Episode -------------------")
             while not done and not truncated:
                 if mode == "boltzmann":
                     action = self.get_action(state, TAU_END, mode = mode)
                 elif mode == "epsilon_greedy":
-                    action = self.get_action(state, EPS_END, mode = "epsilon_greedy")
+                    action = self.get_action(state, EPS_END, mode = mode)
                 next_state, reward, done, truncated, _ = self.env.step(action)
-                # print("Action : ", action_list[action]," Current State : ", next_state)
 
                 state = next_state
                 episode_reward += reward
                 time += 1
-            # print("End  Episode -------------------")
-            # print('TEST Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             test_reward.append(episode_reward)
         self.test_reward = np.mean(test_reward)
@@ -279,10 +288,7 @@ class RobustQAgent(object):
             # 환경 초기화 및 초기 상태 관측
             state, _ = self.env.reset()
             # epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
-
-            tau = (TAU_END - TAU_START) * (ep / self.MAX_EPISODE_NUM) + TAU_START
-            # tau = TAU_END
-            # tau = self.cal_tau(ep / self.MAX_EPISODE_NUM)
+            tau = self.cal_tau(ep / self.MAX_EPISODE_NUM, mode = "linear")
 
             if self.buffer.buffer_count() > self.PTM_STEP:
                 r = self.R
@@ -305,6 +311,7 @@ class RobustQAgent(object):
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
                     r_values = self.cal_r_value_for_previous(states)
+                    # r_values = self.cal_r_value(states)
                     v_values = self.cal_v_value(next_states)
 
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)
@@ -324,15 +331,6 @@ class RobustQAgent(object):
 
             self.save_epi_time.append(time)
             self.save_epi_reward.append(episode_reward)
-
-            # # 에피소드마다 신경망 파라미터를 파일에 저장
-            # self.actor.save_weights("./save_weights/pendulum_actor_2q.h5")
-            # self.critic_1.save_weights("./save_weights/pendulum_critic_12q.h5")
-            # self.critic_2.save_weights("./save_weights/pendulum_critic_22q.h5")
-
-        # # 학습이 끝난 후, 누적 보상값 저장
-        # np.savetxt('./save_weights/pendulum_epi_reward_2q.txt', self.save_epi_reward)
-        # print(self.save_epi_reward)
     
     def get_q_table(self):
         return self.robust_q.get_q_value()
