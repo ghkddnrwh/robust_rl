@@ -48,7 +48,7 @@ class TabularQ(object):
 
     # Q-value, V-value 업데이트 이때 Greedy policy를 가정하기 때문에 V-value는 max로 업데이트
     # 여기서 V-value 업데이트 한는 값을 behavior policy로 해야되나 아니면 Greedy로 해야 되나?
-    def update_value_function(self, state, action, update_value):
+    def update_value_function(self, state, action, update_value, mode = "boltzmann", epsilon = TAU_END):
         if state < 0 or state >= self.state_kind:
             print("Wrong state position")
             return 0
@@ -56,7 +56,19 @@ class TabularQ(object):
             print("Wrong action position")
             return 0
         self.q_table[state, action] = update_value
-        self.v_table[state] = max(self.v_table[state], update_value)
+        if mode == "greedy":
+            self.v_table[state] = max(self.v_table[state], update_value)
+        elif mode == "boltzmann":
+            state_values = np.array(self.q_table[state].copy(), dtype = np.float64)
+            state_probs = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+            for sta in state_probs:
+                if math.isnan(sta):
+                    print("There is nan in action value")
+                    print("State Values ", state_values)
+                    while(True):
+                        x = 1
+            
+            self.v_table[state] = np.dot(state_values, state_probs)
 
     # 학습된 에이전트로 가져오기
     def push_q_table(self, q_table):
@@ -78,7 +90,7 @@ class RobustQAgent(object):
         self.ALPHA = 0.01                   # Update 비율 / 여기서는 신경망을 사용 안하기 때문에 learning rate 대신 존재
         self.R = r                        # robustness 의 정도 / 클수록 robustness 증가
         self.LEARNING_AFTER_STEP = 1000
-        self.PTM_STEP = 5000               # PTM 업데이트 스텝
+        self.PTM_STEP = 10000               # PTM 업데이트 스텝
         self.MAX_EPISODE_NUM = max_episode_num
 
         self.TEST_STEP = 1000
@@ -95,7 +107,7 @@ class RobustQAgent(object):
             self.robust_q.push_q_table(q_table)
         self.buffer = ReplayBuffer(self.BUFFER_SIZE)
         self.PTM = np.zeros((self.state_kind, self.state_kind))     # state to state transition의 가능성을 판단하는 행렬
-        self.PTM_for_previous = np.zeros((self.state_kind))         # 이전 Robust RL 구현을 위해 추가한 vector
+        # self.PTM_for_previous = np.zeros((self.state_kind))         # 이전 Robust RL 구현을 위해 추가한 vector
 
         self.save_epi_time = []
         self.save_epi_reward = []
@@ -121,24 +133,25 @@ class RobustQAgent(object):
         elif mode == "boltzmann":
             p = np.random.rand()
             state_values = np.array(self.robust_q.get_v_values(state), dtype = np.float64)
-            state_values = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+            state_probs = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
 
-            for state in state_values:
+            for state in state_probs:
                 if math.isnan(state):
                     print("There is nan in action value")
+                    print("State Values ", state_values)
                     while(True):
                         x = 1
 
             sum_value = 0
-            for i in range(len(state_values)):
-                sum_value = sum_value + state_values[i]
+            for i in range(len(state_probs)):
+                sum_value = sum_value + state_probs[i]
                 if p < sum_value:
                     return i
-            return len(state_values) - 1
+            return len(state_probs) - 1
                 
         print("Wrong mode is selected")
 
-    def q_learn(self, states, actions, q_targets):
+    def q_learn(self, states, actions, q_targets, mode = "boltzmann", epsilon = TAU_END):
         for i in range(states.shape[0]):
             state = states[i]
             action = actions[i]
@@ -146,7 +159,7 @@ class RobustQAgent(object):
 
             current_q_value = self.robust_q(state, action)
             update_value = (1 - self.ALPHA) * current_q_value + self.ALPHA * q_target
-            self.robust_q.update_value_function(state, action, update_value)
+            self.robust_q.update_value_function(state, action, update_value, mode = mode, epsilon = epsilon)
 
     # 수정 필요
     def q_target(self, rewards, r_values, v_values, dones, R):
@@ -290,7 +303,7 @@ class RobustQAgent(object):
             time, episode_reward, done, truncated = 0, 0, False, False
             # 환경 초기화 및 초기 상태 관측
             state, _ = self.env.reset()
-            # epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM)
+            # epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM, mode = "exp")
             tau = self.cal_tau(ep / self.MAX_EPISODE_NUM, mode = "linear")
 
             if self.buffer.buffer_count() > self.PTM_STEP:
@@ -304,7 +317,7 @@ class RobustQAgent(object):
 
                 done = done or truncated
                 self.PTM[state, next_state] = 1
-                self.PTM_for_previous[state] = 1
+                # self.PTM_for_previous[state] = 1
 
                 reward = reward / self.re
 
@@ -322,7 +335,7 @@ class RobustQAgent(object):
 
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)
 
-                    self.q_learn(states, actions, y_i)
+                    self.q_learn(states, actions, y_i, mode = "boltzmann", epsilon = tau)
 
                     # 타깃 신경망 업데이트
 
@@ -331,14 +344,25 @@ class RobustQAgent(object):
                 episode_reward += reward
                 time += 1
 
+            # print("---------")
+            # print(self.robust_q.q_table[16, :])
+            # print(self.robust_q.q_table[97, :])
+            # print(self.robust_q.q_table[418, :])
+            # print(self.robust_q.q_table[479, :])
+            # print("---------")
             # 에피소드마다 결과 보상값 출력
             # self.robust_q.print()
-            print("-----------")
-            print(self.robust_q.q_table[16, :])
-            print(self.robust_q.q_table[97, :])
-            print(self.robust_q.q_table[418, :])
-            print(self.robust_q.q_table[479, :])
-            print("-----------")
+            act = []
+            q_val = self.robust_q.q_table
+            for i in q_val:
+                ac = i.argmax()
+                act.append(ac)
+
+            act = np.reshape(act, (4, 12))
+            print("---------")
+            for i in act:
+                print(i)
+            print("---------")
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             self.save_epi_time.append(time)

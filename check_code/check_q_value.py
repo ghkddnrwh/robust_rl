@@ -10,25 +10,38 @@ slippery = 0
 
 action = ["<", "v", ">", "^"]
 
-save_path_name = os.path.join("test", "test3")
-env_name = 'FrozenLake-v1'
+save_path_name = os.path.join("test", "iisl2", "cliff", "test11")
+env_name = 'CliffWalking-v0'
 # total_result = np.load(os.path.join("6map_simulation", "total_result.npy"))
 
 # print(total_result)
-slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
-r_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+slippery_list = [0]
+r_list = [0]
+tau_end_list = [0.002]
+reward_list = [1]
 
+tau = tau_end_list[0]
+re = reward_list[0]
 
 simulation_name = "Robust_RL_R=" + str(r_list[r])
-path_env_name = "FrozenLake-v1_slipery=" + str(slippery_list[slippery])
+path_env_name = "CliffWalking-v0_slipery=" + str(slippery_list[slippery])
 
-env_path = os.path.join(save_path_name, path_env_name, simulation_name, "q_value.npy")
+env_path = os.path.join(save_path_name, path_env_name, simulation_name, "tau=" + str(tau), "re=" + str(re), "q_value.npy")
 
 
 
 q_value = np.load(env_path)
 
-print(q_value.shape)
+q_value = np.mean(q_value, axis = 0)
+action = []
 
-print(q_value[0, 0, :, :])
-print(q_value[0, 1, :, :])
+for i in q_value:
+    ac = i.argmax()
+    action.append(ac)
+
+action = np.reshape(action, (4, 12))
+
+for i in action:
+    print(i)
+
+# np.savetxt("zz_test/r", q_value)
