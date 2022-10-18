@@ -4,15 +4,19 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
+np.set_printoptions(threshold=np.inf, linewidth=np.inf, formatter={'float_kind': lambda x: "{0:0.2f}".format(x)})
+
 def main(slippery = 0):
-    R = [0, 0.02, 0.04]
-    # R = [0]
+    R = [0, 0.05, 0.1, 0.2, 0.25, 0.3]
+    tau_end_list = [0.01]
+    reward_list = [20]
+    # R = [0.1]
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
-        path_env_name = "Taxi-v3_slipery=" + str(slippery)
-        env_name = 'Taxi-v3'
+        path_env_name = "CliffWalking-v0_slipery=" + str(slippery)
+        env_name = 'CliffWalking-v0'
 
-        save_path = os.path.join("data", "taxi", "boltzmann", path_env_name, simulation_name)
+        save_path = os.path.join("data", "cliff", "boltzmann", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -23,8 +27,8 @@ def main(slippery = 0):
             print("Something wrong")
             return 0
 
-        train_num = 5
-        max_episode_num = 5000   # 최대 에피소드 설정
+        train_num = 10
+        max_episode_num = 1000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
         total_time = []
@@ -33,7 +37,7 @@ def main(slippery = 0):
 
         for _ in range(train_num):
             env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
-            agent = RobustQAgent(env, max_episode_num, r)   # A2C 에이전트 객체
+            agent = RobustQAgent(env, max_episode_num, r, tau = 0.01, re = 20)   # A2C 에이전트 객체
 
         # 학습 진행
             agent.train()
