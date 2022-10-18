@@ -71,17 +71,20 @@ class TabularQ(object):
 
 
 class RobustQAgent(object):
-    def __init__(self, env, max_episode_num, r = 0, q_table = None):
+    def __init__(self, env, max_episode_num, r = 0, q_table = None, tau = 0.002, re = 20):
         self.GAMMA = 0.99
         self.BATCH_SIZE = 64
         self.BUFFER_SIZE = 20000
         self.ALPHA = 0.01                   # Update 비율 / 여기서는 신경망을 사용 안하기 때문에 learning rate 대신 존재
         self.R = r                        # robustness 의 정도 / 클수록 robustness 증가
         self.LEARNING_AFTER_STEP = 1000
-        self.PTM_STEP = 10000               # PTM 업데이트 스텝
+        self.PTM_STEP = 5000               # PTM 업데이트 스텝
         self.MAX_EPISODE_NUM = max_episode_num
 
         self.TEST_STEP = 1000
+
+        self.tau = tau
+        self.re = re
 
         self.env = env
         self.state_kind = env.observation_space.n
@@ -237,9 +240,9 @@ class RobustQAgent(object):
 
     def cal_tau(self, episode_ratio, mode = "linear"):
         if mode == "linear":
-            return (TAU_END - TAU_START) * (episode_ratio) + TAU_START
+            return (self.tau - TAU_START) * (episode_ratio) + TAU_START
         elif mode == "exp":
-            a = - 1 / math.log(TAU_END / TAU_START)
+            a = - 1 / math.log(self.tau / TAU_START)
             return TAU_START * math.exp(-episode_ratio / a)
         else:
             print("Wrong mode selected")
@@ -260,7 +263,7 @@ class RobustQAgent(object):
             time, episode_reward, done, truncated = 0, 0, False, False
             while not done and not truncated:
                 if mode == "boltzmann":
-                    action = self.get_action(state, TAU_END, mode = mode)
+                    action = self.get_action(state, self.tau, mode = mode)
                 elif mode == "epsilon_greedy":
                     action = self.get_action(state, EPS_END, mode = mode)
                 next_state, reward, done, truncated, _ = self.env.step(action)
@@ -303,7 +306,7 @@ class RobustQAgent(object):
                 self.PTM[state, next_state] = 1
                 self.PTM_for_previous[state] = 1
 
-                reward = reward / 20
+                reward = reward / self.re
 
                 self.buffer.add_buffer(state, action, reward, next_state, done)
 
@@ -329,7 +332,13 @@ class RobustQAgent(object):
                 time += 1
 
             # 에피소드마다 결과 보상값 출력
-            self.robust_q.print()
+            # self.robust_q.print()
+            print("-----------")
+            print(self.robust_q.q_table[16, :])
+            print(self.robust_q.q_table[97, :])
+            print(self.robust_q.q_table[418, :])
+            print(self.robust_q.q_table[479, :])
+            print("-----------")
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             self.save_epi_time.append(time)

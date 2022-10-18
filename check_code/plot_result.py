@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = os.path.join("data", "taxi", "robust_q", "epsilong_greedy")
+save_simulation = os.path.join("data", "taxi", "previous", "boltzmann")
 map_name = "8x8"
 data_name = "total_reward_for_local_perturbation.npy"
 

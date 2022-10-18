@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = os.path.join("data", "taxi", "robust_q", "epsilong_greedy")
+save_simulation = os.path.join("test", "iisl1", "boltzmann", "reward_200")
 map_name = "8x8"
 
 def main(slippery, r_list, perturb_list, transit_prob_list):
@@ -30,7 +30,7 @@ def main(slippery, r_list, perturb_list, transit_prob_list):
                     env = gym.make(env_name, perturb = perturb)
                     agent = RobustQAgent(env, max_episode_num = 1000, r = 0, q_table = q_value)
 
-                    agent.test("epsilon_greedy")
+                    agent.test("boltzmann")
                     test_reward.append(agent.get_test_reward())
 
                     print("Reward : ", test_reward)
@@ -43,7 +43,7 @@ if __name__=="__main__":
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
     slippery_list = [0]
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66]
-    r_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
+    r_list = [0.1]
     # r_list = [0, 0.05, 0.1, 0.15]
     # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2]
     # perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
