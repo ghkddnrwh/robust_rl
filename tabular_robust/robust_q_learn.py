@@ -11,7 +11,7 @@ EPS_START = 1
 EPS_END = 0.01
 
 TAU_START = 1
-TAU_END = 0.002
+TAU_END = 0.01
 
 
 class TabularQ(object):
@@ -60,15 +60,15 @@ class TabularQ(object):
             self.v_table[state] = max(self.v_table[state], update_value)
         elif mode == "boltzmann":
             state_values = np.array(self.q_table[state].copy(), dtype = np.float64)
-            state_probs = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
-            for sta in state_probs:
-                if math.isnan(sta):
+            state_probability = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+            for prob in state_probability:
+                if math.isnan(prob):
                     print("There is nan in action value")
                     print("State Values ", state_values)
                     while(True):
                         x = 1
             
-            self.v_table[state] = np.dot(state_values, state_probs)
+            self.v_table[state] = np.dot(state_values, state_probability)
 
     # 학습된 에이전트로 가져오기
     def push_q_table(self, q_table):
@@ -133,21 +133,21 @@ class RobustQAgent(object):
         elif mode == "boltzmann":
             p = np.random.rand()
             state_values = np.array(self.robust_q.get_v_values(state), dtype = np.float64)
-            state_probs = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+            state_probability = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
 
-            for state in state_probs:
-                if math.isnan(state):
+            for prob in state_probability:
+                if math.isnan(prob):
                     print("There is nan in action value")
                     print("State Values ", state_values)
                     while(True):
                         x = 1
 
             sum_value = 0
-            for i in range(len(state_probs)):
-                sum_value = sum_value + state_probs[i]
+            for i in range(len(state_probability)):
+                sum_value = sum_value + state_probability[i]
                 if p < sum_value:
                     return i
-            return len(state_probs) - 1
+            return len(state_probability) - 1
                 
         print("Wrong mode is selected")
 
@@ -305,6 +305,7 @@ class RobustQAgent(object):
             state, _ = self.env.reset()
             # epsilon = self.cal_epsilon(ep / self.MAX_EPISODE_NUM, mode = "exp")
             tau = self.cal_tau(ep / self.MAX_EPISODE_NUM, mode = "linear")
+            # tau = self.tau
 
             if self.buffer.buffer_count() > self.PTM_STEP:
                 r = self.R
@@ -344,25 +345,24 @@ class RobustQAgent(object):
                 episode_reward += reward
                 time += 1
 
-            # print("---------")
-            # print(self.robust_q.q_table[16, :])
-            # print(self.robust_q.q_table[97, :])
-            # print(self.robust_q.q_table[418, :])
-            # print(self.robust_q.q_table[479, :])
-            # print("---------")
-            # 에피소드마다 결과 보상값 출력
-            # self.robust_q.print()
             act = []
             q_val = self.robust_q.q_table
             for i in q_val:
                 ac = i.argmax()
                 act.append(ac)
 
-            act = np.reshape(act, (4, 12))
+            act = np.reshape(act, (8, 8))
             print("---------")
             for i in act:
                 print(i)
             print("---------")
+            # v_robust = self.robust_q.v_table
+            # v_robust = np.reshape(v_robust, (4, 12))
+            # print("---------")
+            # for i in v_robust:
+            #     print(i)
+            # print("---------")
+            # self.robust_q.print()
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             self.save_epi_time.append(time)

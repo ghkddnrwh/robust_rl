@@ -1,3 +1,4 @@
+from turtle import update
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -11,7 +12,7 @@ EPS_START = 1
 EPS_END = 0.01
 
 TAU_START = 1
-TAU_END = 0.002
+TAU_END = 0.01
 
 
 class TabularQ(object):
@@ -48,7 +49,7 @@ class TabularQ(object):
 
     # Q-value, V-value 업데이트 이때 Greedy policy를 가정하기 때문에 V-value는 max로 업데이트
     # 여기서 V-value 업데이트 한는 값을 behavior policy로 해야되나 아니면 Greedy로 해야 되나?
-    def update_value_function(self, state, action, update_value, mode = "greedy"):
+    def update_value_function(self, state, action, update_value, mode = "boltzmann", epsilon = TAU_END):
         if state < 0 or state >= self.state_kind:
             print("Wrong state position")
             return 0
@@ -61,6 +62,29 @@ class TabularQ(object):
             self.v_table[state] = max(self.v_table[state], update_value)
         elif mode == "mean":
             self.v_table[state] = np.mean(self.q_table[state, :])
+        elif mode == "boltzmann":
+            state_values = np.array(self.q_table[state].copy(), dtype = np.float64)
+            state_probability = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+            for prob in state_probability:
+                if math.isnan(prob):
+                    print("There is nan in action value")
+                    print("State Values ", state_values)
+                    while(True):
+                        x = 1
+            
+            self.v_table[state] = np.dot(state_values, state_probability)
+        elif mode == "epsilon_greedy":
+            update_state_value = 0
+            state_values = self.q_table[state].copy()
+            max_state_value = np.max(state_values)
+            max_index = np.argwhere(state_values == np.amax(state_values))
+            max_index = max_index.flatten().tolist()
+            for state_value in state_values:
+                if state_value == max_state_value:
+                    update_state_value += (1 - epsilon) * state_value / len(max_index)
+                else:
+                    update_state_value += epsilon * state_value / (self.action_kind - len(max_index))
+            self.v_table[state] = update_state_value 
         else:
             print("Wrong Mode is selected")
 
@@ -94,20 +118,21 @@ class TabularQ(object):
         elif mode == "boltzmann":
             p = np.random.rand()
             state_values = np.array(self.get_v_values(state), dtype = np.float64)
-            state_values = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
+            state_probability = np.exp(state_values / epsilon) / np.sum(np.exp(state_values / epsilon))
 
-            for state in state_values:
-                if math.isnan(state):
+            for prob in state_probability:
+                if math.isnan(prob):
                     print("There is nan in action value")
+                    print("State Values ", state_values)
                     while(True):
                         x = 1
 
             sum_value = 0
-            for i in range(len(state_values)):
-                sum_value = sum_value + state_values[i]
+            for i in range(len(state_probability)):
+                sum_value = sum_value + state_probability[i]
                 if p < sum_value:
                     return i
-            return len(state_values) - 1
+            return len(state_probability) - 1
                 
         print("Wrong mode is selected")
 
@@ -151,15 +176,15 @@ class RobustQAgent(object):
         self.save_epi_reward = []
         self.test_reward = 0
 
-    def q_learn(self, states, actions, q_targets, q_network, mode = "greedy", alpha = 0.01):
+    def q_learn(self, states, actions, q_targets, q_network, mode = "boltzmann", epsilon = TAU_END):
         for i in range(states.shape[0]):
             state = states[i]
             action = actions[i]
             q_target = q_targets[i]
 
             current_q_value = q_network(state, action)
-            update_value = (1 - alpha) * current_q_value + alpha * q_target
-            q_network.update_value_function(state, action, update_value, mode)
+            update_value = (1 - self.ALPHA) * current_q_value + self.ALPHA * q_target
+            q_network.update_value_function(state, action, update_value, mode = mode, epsilon = epsilon)
 
     # 수정 필요
     def q_target(self, rewards, r_values, v_values, dones, R):
@@ -253,12 +278,14 @@ class RobustQAgent(object):
                 attack_action = self.attack_q.get_action(state, epsilon, mode = "epsilon_greedy")
 
                 next_state, reward, done, truncated, _ = self.env.step(action)
+                reward = reward / 20
                 self.attack_env.set_state(state)
                 attack_next_state, attack_reward, attack_done, attack_truncated, _ = self.attack_env.step(attack_action)
 
                 done = done or truncated
                 attack_done = attack_done or attack_truncated
-                attack_reward = - 10 * attack_reward     # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
+                # print("Attack Reward : ", - attack_reward / 1000)
+                attack_reward = - attack_reward / 1000    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
 
                 self.buffer.add_buffer(state, action, reward, next_state, done, attack_action, attack_reward, attack_next_state, attack_done)
 
@@ -275,8 +302,8 @@ class RobustQAgent(object):
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)
                     attack_y_i = self.q_target(attack_rewards, r_values, attack_v_values, attack_dones, 0)
 
-                    self.q_learn(states, actions, y_i, self.robust_q)
-                    self.q_learn(states, attack_actions, attack_y_i, self.attack_q, mode = "mean", alpha = 0.05)
+                    self.q_learn(states, actions, y_i, self.robust_q, mode = "boltzmann", epsilon = tau)
+                    self.q_learn(states, attack_actions, attack_y_i, self.attack_q, mode = "epsilon_greedy", epsilon = epsilon)
 
                     # 타깃 신경망 업데이트
 
@@ -285,9 +312,41 @@ class RobustQAgent(object):
                 episode_reward += reward
                 time += 1
 
-            # 에피소드마다 결과 보상값 출력
-            # self.robust_q.print()
-            # self.attack_q.print()
+            act = []
+            attack_act = []
+            q_val = self.robust_q.q_table
+            attack_q_val = self.attack_q.q_table
+            for i in q_val:
+                ac = i.argmax()
+                act.append(ac)
+
+            for j in attack_q_val:
+                bc = j.argmax()
+                attack_act.append(bc)
+
+            act = np.reshape(act, (4, 12))
+            attack_act = np.reshape(attack_act, (4,12))
+            print("---------")
+            for i in act:
+                print(i)
+            print("---------")
+            print("---------")
+            for i in attack_act:
+                print(i)
+            print("---------")
+
+            v_robust = self.robust_q.v_table
+            v_attack = self.attack_q.v_table
+            v_robust = np.reshape(v_robust, (4, 12))
+            v_attack = np.reshape(v_attack, (4, 12))
+            # print("---------")
+            # for i in v_robust:
+            #     print(i)
+            # print("---------")
+            # print("---------")
+            # for i in v_attack:
+            #     print(i)
+            # print("---------")
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             self.save_epi_time.append(time)
