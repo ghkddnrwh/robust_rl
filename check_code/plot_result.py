@@ -6,6 +6,7 @@ import gym
 import os
 
 save_simulation = os.path.join("data", "iisl2", "test15")
+
 map_name = "8x8"
 data_name = "total_reward_for_local_perturbation.npy"
 

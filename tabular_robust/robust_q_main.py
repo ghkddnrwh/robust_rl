@@ -36,8 +36,9 @@ def main(slippery = 0):
         q_table = []
 
         for _ in range(train_num):
-            env = gym.make(env_name, map_name = map_name, slippery_value = slippery)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
-            agent = RobustQAgent(env, max_episode_num, r, tau = 0.01, re = 1 / 5)   # A2C 에이전트 객체
+            # env = gym.make(env_name, map_name = map_name, slippery_value = slippery)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
+            env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
+            agent = RobustQAgent(env, max_episode_num, r, tau = 0.01, re = 20)   # A2C 에이전트 객체
 
         # 학습 진행
             agent.train()
@@ -67,7 +68,7 @@ def main(slippery = 0):
     # agent.plot_result(max_episode_num, interval)
 
 if __name__=="__main__":
-    slippery = [0, 0.1, 0.2, 0.3]
-    # slippery = [0]
+    # slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66]
+    slippery = [0]
     for slip in slippery:
         main(slip)

@@ -4,16 +4,15 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = os.path.join("data", "frozen_trial2", "boltzmann")
+save_simulation = os.path.join("data", "cliff", "previous")
 map_name = "8x8"
 
 def main(slippery, r_list, perturb_list, transit_prob_list):
     env_test_reward = []
     for r in r_list:
         simulation_name = "Robust_RL_R=" + str(r)
-        path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
-
-        env_name = 'FrozenLake-v1'
+        path_env_name = "CliffWalking-v0_slipery=" + str(slippery)
+        env_name = 'CliffWalking-v0'
 
         call_path = os.path.join(save_simulation, path_env_name, simulation_name)
         q_table = np.load(os.path.join(call_path, "q_value.npy"))
@@ -28,8 +27,9 @@ def main(slippery, r_list, perturb_list, transit_prob_list):
             for transit_prob in transit_prob_list:
                 test_reward = []
                 for q_value in q_table:
-                    env = gym.make(env_name, map_name = map_name, slippery_value = slippery, perturb = perturb)
-                    # env = gym.make(env_name, perturb = perturb)
+
+                    # env = gym.make(env_name, map_name = map_name, slippery_value = slippery, perturb = perturb)
+                    env = gym.make(env_name, perturb = perturb)
                     agent = RobustQAgent(env, max_episode_num = 1000, r = 0, q_table = q_value, tau = 0.01, re = 20)
 
                     agent.test("boltzmann")

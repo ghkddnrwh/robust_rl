@@ -7,8 +7,8 @@ import os
 np.set_printoptions(formatter={'float_kind': lambda x: "{0:0.2f}".format(x)})
 
 def main(slippery = 0):
-    # R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    R = [0.4]
+    R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    # R = [0.02]
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         path_env_name = "CliffWalking-v0_slipery=" + str(slippery)

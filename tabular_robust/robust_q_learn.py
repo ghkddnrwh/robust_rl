@@ -107,7 +107,7 @@ class RobustQAgent(object):
             self.robust_q.push_q_table(q_table)
         self.buffer = ReplayBuffer(self.BUFFER_SIZE)
         self.PTM = np.zeros((self.state_kind, self.state_kind))     # state to state transition의 가능성을 판단하는 행렬
-        # self.PTM_for_previous = np.zeros((self.state_kind))         # 이전 Robust RL 구현을 위해 추가한 vector
+        self.PTM_for_previous = np.zeros((self.state_kind))         # 이전 Robust RL 구현을 위해 추가한 vector
 
         self.save_epi_time = []
         self.save_epi_reward = []
@@ -330,8 +330,8 @@ class RobustQAgent(object):
                     # 리플레이 버퍼에서 샘플 무작위 추출
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
-                    # r_values = self.cal_r_value_for_previous(states)
-                    r_values = self.cal_r_value(states)
+                    r_values = self.cal_r_value_for_previous(states)
+                    # r_values = self.cal_r_value(states)
                     v_values = self.cal_v_value(next_states)
 
                     y_i = self.q_target(rewards, r_values, v_values, dones, r)
