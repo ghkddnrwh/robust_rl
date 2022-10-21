@@ -9,7 +9,7 @@ from copy import deepcopy
 from attack_robust_tabular.attack_replaybuffer import ReplayBuffer
 
 EPS_START = 1
-EPS_END = 0.01
+EPS_END = 0.001
 
 TAU_START = 1
 TAU_END = 0.01
@@ -285,7 +285,7 @@ class RobustQAgent(object):
                 done = done or truncated
                 attack_done = attack_done or attack_truncated
                 # print("Attack Reward : ", - attack_reward / 1000)
-                attack_reward = - attack_reward / 1000    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
+                attack_reward = - attack_reward / 20    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
 
                 self.buffer.add_buffer(state, action, reward, next_state, done, attack_action, attack_reward, attack_next_state, attack_done)
 
