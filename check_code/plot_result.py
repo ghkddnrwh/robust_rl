@@ -5,16 +5,25 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
+<<<<<<< HEAD
 save_simulation = os.path.join("data", "cliff", "attack_q")
+=======
+save_simulation = os.path.join("data", "cliff", "boltzmann")
+>>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
 
 map_name = "8x8"
 data_name = "total_reward_for_local_perturbation.npy"
 
 if __name__=="__main__":
     # slippery_list = [0, 0.1, 0.2, 0.3]
+<<<<<<< HEAD
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
     slippery_list = [0]
     r_list = [0, 0.1, 0.2, 0.3]
+=======
+    slippery_list = [0, 0.2]
+    r_list = [0, 0.1, 0.2]
+>>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
     # r_list = [0, 0.05, 0.1, 0.15, 0.2]
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     # perturb_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]             # For global perturbation

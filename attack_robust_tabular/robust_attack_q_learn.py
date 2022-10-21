@@ -278,14 +278,18 @@ class RobustQAgent(object):
                 attack_action = self.attack_q.get_action(state, epsilon, mode = "epsilon_greedy")
 
                 next_state, reward, done, truncated, _ = self.env.step(action)
-                reward = reward / 20
+                reward = reward * 5
                 self.attack_env.set_state(state)
                 attack_next_state, attack_reward, attack_done, attack_truncated, _ = self.attack_env.step(attack_action)
 
                 done = done or truncated
                 attack_done = attack_done or attack_truncated
                 # print("Attack Reward : ", - attack_reward / 1000)
+<<<<<<< HEAD
                 attack_reward = - attack_reward / 20    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
+=======
+                attack_reward = - attack_reward * 5    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
+>>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
 
                 self.buffer.add_buffer(state, action, reward, next_state, done, attack_action, attack_reward, attack_next_state, attack_done)
 
@@ -324,21 +328,21 @@ class RobustQAgent(object):
                 bc = j.argmax()
                 attack_act.append(bc)
 
-            act = np.reshape(act, (4, 12))
-            attack_act = np.reshape(attack_act, (4,12))
-            print("---------")
-            for i in act:
-                print(i)
-            print("---------")
-            print("---------")
-            for i in attack_act:
-                print(i)
-            print("---------")
+            # act = np.reshape(act, (4, 12))
+            # attack_act = np.reshape(attack_act, (4,12))
+            # print("---------")
+            # for i in act:
+            #     print(i)
+            # print("---------")
+            # print("---------")
+            # for i in attack_act:
+            #     print(i)
+            # print("---------")
 
-            v_robust = self.robust_q.v_table
-            v_attack = self.attack_q.v_table
-            v_robust = np.reshape(v_robust, (4, 12))
-            v_attack = np.reshape(v_attack, (4, 12))
+            # v_robust = self.robust_q.v_table
+            # v_attack = self.attack_q.v_table
+            # v_robust = np.reshape(v_robust, (4, 12))
+            # v_attack = np.reshape(v_attack, (4, 12))
             # print("---------")
             # for i in v_robust:
             #     print(i)
@@ -347,6 +351,25 @@ class RobustQAgent(object):
             # for i in v_attack:
             #     print(i)
             # print("---------")
+            act = []
+            attack_act = []
+            q_val = self.robust_q.q_table
+            attack_q_val = self.attack_q.q_table
+            for i in q_val:
+                ac = i.argmax()
+                act.append(ac)
+
+            for i in attack_q_val:
+                ac = i.argmax()
+                attack_act.append(ac)
+
+            act = np.reshape(act, (8, 8))
+            attack_act = np.reshape(attack_act, (8, 8))
+            print("---------")
+            for i in range(len(act)):
+                print(act[i], " ", attack_act[i])
+            print("---------")
+
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
             self.save_epi_time.append(time)
