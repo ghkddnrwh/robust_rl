@@ -7,23 +7,15 @@ import os
 np.set_printoptions(formatter={'float_kind': lambda x: "{0:0.2f}".format(x)})
 map_name = "8x8"
 def main(slippery = 0):
-<<<<<<< HEAD
     # R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     R = [0, 0.15, 0.3]
-=======
-    R = [0.15, 0.3]
-    # R = [0]
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
+
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
         env_name = 'FrozenLake-v1'
 
-<<<<<<< HEAD
         save_path = os.path.join("data", "original_cliff", "attack_q", path_env_name, simulation_name)
-=======
-        save_path = os.path.join("data", "frozen_lake_trial2", "attack_q", path_env_name, simulation_name)
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -35,11 +27,7 @@ def main(slippery = 0):
             return 0
 
         train_num = 5
-<<<<<<< HEAD
         max_episode_num = 1000   # 최대 에피소드 설정
-=======
-        max_episode_num = 5000   # 최대 에피소드 설정
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
         interval = 10           # plot interval
 
         total_time = []

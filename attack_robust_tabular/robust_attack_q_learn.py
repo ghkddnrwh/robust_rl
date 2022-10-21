@@ -285,11 +285,7 @@ class RobustQAgent(object):
                 done = done or truncated
                 attack_done = attack_done or attack_truncated
                 # print("Attack Reward : ", - attack_reward / 1000)
-<<<<<<< HEAD
                 attack_reward = - attack_reward / 20    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
-=======
-                attack_reward = - attack_reward * 5    # Attack agent의 경우는 reward의 minimization을 학습해야 하므로
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
 
                 self.buffer.add_buffer(state, action, reward, next_state, done, attack_action, attack_reward, attack_next_state, attack_done)
 
