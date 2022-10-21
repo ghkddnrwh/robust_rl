@@ -5,11 +5,7 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-<<<<<<< HEAD
 save_simulation = os.path.join("data", "original_cliff", "attack_q")
-=======
-save_simulation = os.path.join("paper_final", "frozen_lake", "robust_q")
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
 map_name = "8x8"
 
 def main(slippery, r_list, perturb_list, transit_prob_list):
@@ -50,28 +46,17 @@ def main(slippery, r_list, perturb_list, transit_prob_list):
 if __name__=="__main__":
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
-<<<<<<< HEAD
-    slippery_list = [0]
-=======
     slippery_list = [0, 0.2]
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66]
     # r_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
     # r_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
     # r_list = [0.1]
     # r_list = [0, 0.05, 0.1, 0.15]
-<<<<<<< HEAD
-    r_list = [0, 0.15, 0.3]
-    # perturb_list = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-    perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    # perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-=======
     r_list = [0.15, 0.3]
     r_list = [0]
     # perturb_list = [0, 0.03, 0.07, 0.1, 0.13, 0.17, 0.2]
     # perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     perturb_list = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
     # perturb_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]             # For global perturbation
     transit_prob_list = [None]
     # transit_prob_list = [[1, 0, 0, 0],
@@ -102,8 +87,4 @@ if __name__=="__main__":
         test_reward = main(slippery, r_list, perturb_list, transit_prob_list)
         env_to_env_test_reward.append(test_reward)
     env_to_env_test_reward = np.reshape(np.array(env_to_env_test_reward), (len(slippery_list), len(r_list), len(perturb_list), len(transit_prob_list)))
-<<<<<<< HEAD
     np.save(os.path.join(save_simulation, "local_perturbation_reward_for_paper"), env_to_env_test_reward)
-=======
-    np.save(os.path.join(save_simulation, "global_perturbation_for_paper"), env_to_env_test_reward)
->>>>>>> 8137001a0c850ead47bd9b763f85f7ce774286d7
