@@ -351,7 +351,7 @@ class RobustQAgent(object):
                 ac = i.argmax()
                 act.append(ac)
 
-            act = np.reshape(act, (8, 8))
+            act = np.reshape(act, (4, 12))
             print("---------")
             for i in act:
                 print(i)
