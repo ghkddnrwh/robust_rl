@@ -15,7 +15,7 @@ def main(slippery = 0):
         path_env_name = "FrozenLake-v1_slipery=" + str(slippery)
         env_name = 'FrozenLake-v1'
 
-        save_path = os.path.join("data", "original_cliff", "attack_q", path_env_name, simulation_name)
+        save_path = os.path.join("test", "iisl1", "attack_q", path_env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -27,7 +27,7 @@ def main(slippery = 0):
             return 0
 
         train_num = 5
-        max_episode_num = 1000   # 최대 에피소드 설정
+        max_episode_num = 5000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
         total_time = []
@@ -68,6 +68,6 @@ def main(slippery = 0):
 
 if __name__=="__main__":
     # slippery = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.66, 0.7, 0.8]
-    slippery = [0, 0.1, 0.2]
+    slippery = [0.33, 0.66]
     for slip in slippery:
         main(slip)
