@@ -9,7 +9,7 @@ from sac_learn import SACagent
 def main():
 
     max_episode_num = 200  # 최대 에피소드 설정
-    env = gym.make("Pendulum-v0")
+    env = gym.make("Pendulum-v1")
     agent = SACagent(env)  # SAC 에이전트 객체
 
     # 학습 진행

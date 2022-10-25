@@ -219,7 +219,7 @@ class SACagent(object):
             # 에피소드 초기화
             time, episode_reward, done = 0, 0, False
             # 환경 초기화 및 초기 상태 관측
-            state = self.env.reset()
+            state, _ = self.env.reset()
 
             while not done:
                 # 환경 가시화
@@ -229,8 +229,11 @@ class SACagent(object):
                 # 행동 범위 클리핑
                 action = np.clip(action, -self.action_bound, self.action_bound)
                 # 다음 상태, 보상 관측
-                next_state, reward, done, _ = self.env.step(action)
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
                 # 학습용 보상 설정
+                # if time % 50 == 0:
+                #     print(next_state, reward, done, truncated)
                 train_reward = (reward + 8) / 8
                 # 리플레이 버퍼에 저장
                 self.buffer.add_buffer(state, action, train_reward, next_state, done)
@@ -276,12 +279,12 @@ class SACagent(object):
 
 
             # 에피소드마다 신경망 파라미터를 파일에 저장
-            self.actor.save_weights("./save_weights/pendulum_actor_2q.h5")
-            self.critic_1.save_weights("./save_weights/pendulum_critic_12q.h5")
-            self.critic_2.save_weights("./save_weights/pendulum_critic_22q.h5")
+        #     self.actor.save_weights("./save_weights/pendulum_actor_2q.h5")
+        #     self.critic_1.save_weights("./save_weights/pendulum_critic_12q.h5")
+        #     self.critic_2.save_weights("./save_weights/pendulum_critic_22q.h5")
 
-        # 학습이 끝난 후, 누적 보상값 저장
-        np.savetxt('./save_weights/pendulum_epi_reward_2q.txt', self.save_epi_reward)
+        # # 학습이 끝난 후, 누적 보상값 저장
+        # np.savetxt('./save_weights/pendulum_epi_reward_2q.txt', self.save_epi_reward)
         print(self.save_epi_reward)
 
 
