@@ -12,7 +12,7 @@ scale = 0.25
 action_to_str = ["U", "R", "D", "L"]
 arrows = {"R":(1,0), "L":(-1,0),"U":(0,1),"D":(0,-1)}
 
-save_path_name = os.path.join("data", "cliff", "boltzmann")
+save_path_name = os.path.join("data", "original_cliff", "attack_q")
 env_name = 'CliffWalking-v0'
 
 
@@ -32,7 +32,8 @@ print(q_value.shape)
 
 frozen_x_list = [8 * 2 + 3, 8*3+5, 8*4+3, 8*5+1, 8*5+2, 8*5+6, 8*6+4, 8*6+6, 8*7+3, 8*6+1]
 
-q_value = q_value[0, :, :]
+q_value = q_value[0, 0, :, :]
+# q_value = q_value[0, :, :]
 
 max_value = np.argmax(q_value, axis = 1)
 str_list = []
@@ -41,9 +42,7 @@ for i in range(len(max_value)):
     str_list.append(action_to_str[max_value[i]])
 
 str_list = np.reshape(str_list, (4, 12))
-im = plt.imread("gift.png")
-fig, ax = plt.subplots(figsize = (12, 4))
-fig.tight_layout()
+fig, ax = plt.subplots(figsize = (6, 2))
 # newax = fig.add_axes([0.8, 0.8, 0.2, 0.2])
 
 
@@ -72,20 +71,21 @@ for i in range(10):
 plt.scatter(11.5, 0.5, s=400, facecolors='none', edgecolors='r', linewidths=2)
         
 
-for i in range(12):
-    plt.axhline(i + 1)
+for i in range(13):
+    plt.axhline(i )
 
-for i in range(12):
-    plt.axvline(i + 1)
+for i in range(13):
+    plt.axvline(i )
 
 plt.xlim([0, 12])      # X축의 범위: [xmin, xmax]
 plt.ylim([0, 4])
-plt.xticks(range(13), range(13))
-plt.yticks(range(5), range(5))
+# plt.xticks(range(13), range(13))
+# plt.yticks(range(5), range(5))
+plt.axis("off")
 
 
 
-
+fig.tight_layout()
 # plt.show()
 plt.savefig("robust_action", dpi = 400)
 

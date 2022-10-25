@@ -18,7 +18,7 @@ if __name__=="__main__":
     r_list = [0, 0.15, 0.3]
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     all_reward = []
-
+    fig, ax = plt.subplots(figsize = (3, 2.5))
     for index, name in enumerate(name_list):
         save_simulation = os.path.join("data", "original_cliff", name)
         total_reward = np.load(os.path.join(save_simulation, data_name))
@@ -35,10 +35,11 @@ if __name__=="__main__":
             plt.plot(perturb_list, plot_data, label =  "%s"%label_list[index] + "(R = %.2f)"%r_list[r_index])
 
 
-    plt.legend()
+    plt.legend(prop={'size': 6})
     plt.xlabel("Action Perturbation Probability")
-    plt.ylabel("Accumulated Reward(5 trials mean)")
+    plt.ylabel("Accumulated Reward")
     # plt.suptitle("CliffWalking")
+    fig.tight_layout()
     # plt.show()
     plt.savefig("Local_Perturbation_CliffWalking", dpi = 400)
-    plt.clf()
+    # plt.clf()

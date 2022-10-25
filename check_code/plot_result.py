@@ -5,16 +5,16 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = os.path.join("data", "cliff", "attack_q")
+save_simulation = os.path.join("data", "more_trial", "attack_q")
 
 map_name = "8x8"
-data_name = "total_reward_for_local_perturbation.npy"
+data_name = "local_perturbation_reward_for_test.npy"
 
 if __name__=="__main__":
     # slippery_list = [0, 0.1, 0.2, 0.3]
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
-    slippery_list = [0]
-    r_list = [0, 0.1, 0.2, 0.3]
+    slippery_list = [0, 0.1, 0.15, 0.2, 0.3]
+    r_list = [0, 0.15, 0.3]
 
     # r_list = [0, 0.05, 0.1, 0.15, 0.2]
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
@@ -48,7 +48,7 @@ if __name__=="__main__":
     for slip_index in range(len(slippery_list)):
         print(total_reward.shape)
 
-        # fig = plt.subplot(3, 4, slip_index + 1)
+        fig = plt.subplot(3, 4, slip_index + 1)
         for r_index in range(total_reward.shape[1]):
             plot_data = total_reward[slip_index, r_index, :, 0]
             ref_data = total_reward[slip_index, r_index, 0, 0]
