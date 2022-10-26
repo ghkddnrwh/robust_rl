@@ -10,14 +10,14 @@ import numpy as np
 import os
 
 def main():
-    R = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    R = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
     # R = [0.1]
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         env_name = 'Pendulum-v1'
 
-        save_path = os.path.join("data_sac", "pendul", "pess_q", env_name, simulation_name)
+        save_path = os.path.join("data_sac", "pendul", "pess_q_trial4", env_name, simulation_name)
         try:
             if not(os.path.exists(save_path)):
                 os.makedirs(save_path)
@@ -28,7 +28,7 @@ def main():
             print("Something wrong")
             return 0
 
-        train_num = 5
+        train_num = 1
         # max_episode_num = 5000   # 최대 에피소드 설정
         # interval = 10           # plot interval
 
