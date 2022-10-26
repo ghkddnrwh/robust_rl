@@ -26,7 +26,7 @@ def main(slippery = 0):
             print("Something wrong")
             return 0
 
-        train_num = 20
+        train_num = 5
         max_episode_num = 5000   # 최대 에피소드 설정
         interval = 10           # plot interval
 
