@@ -2,7 +2,6 @@
 # coded by St.Watermelon
 
 # 필요한 패키지 임포트
-from threading import currentThread
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -103,7 +102,7 @@ class SACagent(object):
         self.R = R
         self.PESS_STEP = 5000
 
-        self.NUM_TEST_EPISODES = 10
+        self.NUM_TEST_EPISODES = 20
         
         self.env = env
         self.pess_env = pess_env
@@ -160,6 +159,7 @@ class SACagent(object):
 
         # 에피소드에서 얻은 총 보상값을 저장하기 위한 변수
         self.save_epi_reward = []
+        self.save_epi_test_reard = []
 
 
     ## 행동 샘플링
@@ -238,6 +238,36 @@ class SACagent(object):
 
         return target_qi
 
+    def load_weights(self, save_path):
+        self.actor.load_weights(os.path.join(save_path, "robust_actor.h5"))
+        self.critic_1.load_weights(os.path.join(save_path, "robust_crtic.h5"))
+        self.critic_2.load_weights(os.path.join(save_path, "robust_crtic2.h5"))
+
+        self.pess_actor.load_weights(os.path.join(save_path, "pess_actor.h5"))
+        self.pess_critic_1.load_weights(os.path.join(save_path, "pess_crtic.h5"))
+        self.pess_critic_2.load_weights(os.path.join(save_path, "pess_crtic2.h5"))
+
+    def test(self, perturb = 0, deterministic = True):
+        for ep in range(int(self.NUM_TEST_EPISODES)):
+            time, episode_reward, done = 0, 0, False
+            state, _ = self.env.reset()
+
+            while not done:
+                p = np.random.rand()
+                if p < perturb:
+                    action = self.env.action_space.sample()
+                else:
+                    action, _ = self.get_action(tf.convert_to_tensor([state], dtype=tf.float32), deterministic=deterministic)
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
+
+                state = next_state
+                episode_reward += reward
+                time += 1
+            self.save_epi_test_reard.append(episode_reward)
+            print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+        return np.mean(self.save_epi_test_reard)
+
     ## 에이전트 학습
     def train(self):
         r = 0
@@ -247,11 +277,12 @@ class SACagent(object):
         total_steps = self.STEPS_PER_EPOCH * self.EPOCHS
         time, episode_reward, done, episode_time = 0, 0, False, 0
         state, _ = self.env.reset()
-        # self.pess_env.reset()
+        self.pess_env.reset()
 
         for current_step in range(total_steps):
-            # self.pess_env.set_state(state)
-            self.pess_env = deepcopy(self.env)
+            exact_state = self.env.get_exact_state()
+            self.pess_env.set_state(exact_state)
+            # self.pess_env = deepcopy(self.env)
             if current_step > self.START_STEPS:
                 action, pess_action = self.get_action(tf.convert_to_tensor([state], dtype=tf.float32))
             else:
@@ -270,11 +301,15 @@ class SACagent(object):
             state = next_state
             episode_reward += reward
 
+            if pess_done:
+                self.pess_env.reset()
+
             if done or (time == self.MAX_EP_LEN):
                 episode_time += 1
                 self.save_epi_reward.append(episode_reward)
                 print("Episode Time: ", episode_time, 'Reward: ', episode_reward, 'Time: ', time, 'Current Step: ', current_step + 1)
                 state, _ = self.env.reset()
+                self.pess_env.reset()
                 time, episode_reward = 0, 0
                 
             if current_step >= self.UPDATE_AFTER and current_step % self.UPDATE_EVERY == 0:
