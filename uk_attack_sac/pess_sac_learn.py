@@ -160,6 +160,7 @@ class SACagent(object):
 
         # 에피소드에서 얻은 총 보상값을 저장하기 위한 변수
         self.save_epi_reward = []
+        self.save_epi_test_reward = []
 
 
     ## 행동 샘플링
@@ -238,6 +239,35 @@ class SACagent(object):
 
         return target_qi
 
+    def load_weights(self, save_path):
+        self.actor.load_weights(os.path.join(save_path, "robust_actor.h5"))
+        self.critic_1.load_weights(os.path.join(save_path, "robust_crtic.h5"))
+        self.critic_2.load_weights(os.path.join(save_path, "robust_crtic2.h5"))
+
+        self.pess_actor.load_weights(os.path.join(save_path, "pess_actor.h5"))
+        self.pess_critic_1.load_weights(os.path.join(save_path, "pess_crtic.h5"))
+        self.pess_critic_2.load_weights(os.path.join(save_path, "pess_crtic2.h5"))
+
+    def test(self, perturb = 0, deterministic = True):
+        for ep in range(int(self.NUM_TEST_EPISODES)):
+            time, episode_reward, done = 0, 0, False
+            state, _ = self.env.reset()
+
+            while not done:
+                p = np.random.rand()
+                if p < perturb:
+                    action = self.env.action_space.sample()
+                else:
+                    action, _ = self.get_action(tf.convert_to_tensor([state], dtype=tf.float32), deterministic=deterministic)
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
+
+                state = next_state
+                episode_reward += reward
+                time += 1
+            self.save_epi_test_reward.append(episode_reward)
+            print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+        return np.mean(self.save_epi_test_reward)
     ## 에이전트 학습
     def train(self):
         r = 0
