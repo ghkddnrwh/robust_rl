@@ -16,7 +16,7 @@ def main():
     perturb_type = "Gravity"
     # R = [0.1]
     total_reward = []
-    train_num = 5
+    train_num = 3
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)

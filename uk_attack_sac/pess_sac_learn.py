@@ -97,12 +97,12 @@ class SACagent(object):
         # self.MAX_EP_LEN = 1000
         self.MAX_EP_LEN = 200
         self.TAU = 0.005
-        self.EPOCHS = 100
+        self.EPOCHS = 400
         # self.EPOCHS = 10
         self.R = R
         self.PESS_STEP = 5000
 
-        self.NUM_TEST_EPISODES = 30
+        self.NUM_TEST_EPISODES = 100
         
         self.env = env
         self.pess_env = pess_env
@@ -142,15 +142,6 @@ class SACagent(object):
         self.actor.summary()
         self.critic_1.summary()
         self.critic_2.summary()
-
-        # # 옵티마이저
-        # self.actor_opt = Adam(self.LEARNING_RATE)
-        # self.critic_1_opt = Adam(self.LEARNING_RATE)
-        # self.critic_2_opt = Adam(self.LEARNING_RATE)
-
-        # self.pess_actor_opt = Adam(self.LEARNING_RATE)
-        # self.pess_critic_1_opt = Adam(self.LEARNING_RATE)
-        # self.pess_critic_2_opt = Adam(self.LEARNING_RATE)
 
         self.opt = Adam(self.LEARNING_RATE)
 
@@ -229,12 +220,12 @@ class SACagent(object):
                 y_k[i] = rewards[i] + self.GAMMA * (r * r_values[i] + (1 - r) * q_values[i])
         return y_k
 
-    def cal_target(self, state_actions, next_log_pdf, target_critic_1, target_critic_2):
+    def cal_target(self, state_actions, next_log_pdf, target_critic_1, target_critic_2, alpha):
         target_qs_1 = target_critic_1(state_actions)
         target_qs_2 = target_critic_2(state_actions)
         target_qs = tf.math.minimum(target_qs_1, target_qs_2)
 
-        target_qi = target_qs - self.ALPHA * next_log_pdf
+        target_qi = target_qs - alpha * next_log_pdf
 
         return target_qi
 
@@ -264,6 +255,7 @@ class SACagent(object):
                 state = next_state
                 episode_reward += reward
                 time += 1
+
             self.save_epi_test_reard.append(episode_reward)
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
         return np.mean(self.save_epi_test_reard)
@@ -325,11 +317,11 @@ class SACagent(object):
                     next_state_actions = tf.convert_to_tensor(tf.concat([next_states, next_actions], axis = -1), dtype = tf.float32)
                     pess_next_state_actions = tf.convert_to_tensor(tf.concat([pess_next_states, pess_next_actions], axis = -1), dtype = tf.float32)
 
-                    v_target_qi = self.cal_target(next_state_actions, next_log_pdf, self.target_critic_1, self.target_critic_2)
-                    r_target_qi = self.cal_target(pess_next_state_actions, pess_next_log_pdf, self.target_critic_1, self.target_critic_2)
+                    v_target_qi = self.cal_target(next_state_actions, next_log_pdf, self.target_critic_1, self.target_critic_2, self.ALPHA)
+                    r_target_qi = self.cal_target(pess_next_state_actions, pess_next_log_pdf, self.target_critic_1, self.target_critic_2, 0)
                     y_i = self.q_target(rewards, v_target_qi.numpy(), dones, r, r_target_qi.numpy()) # 바꿔야함
 
-                    next_target_qi = self.cal_target(pess_next_state_actions, 0, self.pess_target_critic_1, self.pess_target_critic_2)
+                    next_target_qi = self.cal_target(pess_next_state_actions, 0, self.pess_target_critic_1, self.pess_target_critic_2, 0)
                     pess_y_i = self.q_target(pess_rewards, next_target_qi.numpy(), pess_dones, 0, next_target_qi.numpy()) 
 
                     self.critic_learn(tf.convert_to_tensor(tf.concat([states, actions], axis = -1), dtype=tf.float32),

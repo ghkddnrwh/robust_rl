@@ -18,7 +18,7 @@ def main():
         env_name = 'Pendulum-v1'
         train_num = 5
         total_reward = []    
-        total_save_path = os.path.join("data_sac", "pendul", "pess_q_trial6", env_name, simulation_name)
+        total_save_path = os.path.join("data_sac", "pendul", "non_deepcopy", env_name, simulation_name)
         for train_time in range(train_num):
             save_path = os.path.join(total_save_path, "trial" + str(train_time))
             try:
