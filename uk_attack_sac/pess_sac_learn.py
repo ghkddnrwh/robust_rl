@@ -102,7 +102,7 @@ class SACagent(object):
         self.R = R
         self.PESS_STEP = 5000
 
-        self.NUM_TEST_EPISODES = 20
+        self.NUM_TEST_EPISODES = 30
         
         self.env = env
         self.pess_env = pess_env
