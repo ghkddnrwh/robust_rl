@@ -152,6 +152,8 @@ class SACagent(object):
         self.save_epi_reward = []
         self.save_epi_test_reard = []
 
+        self.pess_save_epi_reward = []
+
 
     ## 행동 샘플링
     def get_action(self, state, deterministic = False):
@@ -231,11 +233,11 @@ class SACagent(object):
 
     def load_weights(self, save_path):
         self.actor.load_weights(os.path.join(save_path, "robust_actor.h5"))
-        self.critic_1.load_weights(os.path.join(save_path, "robust_crtic.h5"))
+        self.critic_1.load_weights(os.path.join(save_path, "robust_crtic1.h5"))
         self.critic_2.load_weights(os.path.join(save_path, "robust_crtic2.h5"))
 
         self.pess_actor.load_weights(os.path.join(save_path, "pess_actor.h5"))
-        self.pess_critic_1.load_weights(os.path.join(save_path, "pess_crtic.h5"))
+        self.pess_critic_1.load_weights(os.path.join(save_path, "pess_crtic1.h5"))
         self.pess_critic_2.load_weights(os.path.join(save_path, "pess_crtic2.h5"))
 
     def test(self, perturb = 0, deterministic = True):
@@ -268,6 +270,7 @@ class SACagent(object):
 
         total_steps = self.STEPS_PER_EPOCH * self.EPOCHS
         time, episode_reward, done, episode_time = 0, 0, False, 0
+        pess_episode_reward = 0
         state, _ = self.env.reset()
         self.pess_env.reset()
 
@@ -292,6 +295,7 @@ class SACagent(object):
 
             state = next_state
             episode_reward += reward
+            pess_episode_reward += pess_reward
 
             if pess_done:
                 self.pess_env.reset()
@@ -299,10 +303,11 @@ class SACagent(object):
             if done or (time == self.MAX_EP_LEN):
                 episode_time += 1
                 self.save_epi_reward.append(episode_reward)
-                print("Episode Time: ", episode_time, 'Reward: ', episode_reward, 'Time: ', time, 'Current Step: ', current_step + 1)
+                print("Episode Time: ", episode_time, 'Reward: ', episode_reward, "Pess Reward: ", pess_episode_reward, 'Time: ', time, 'Current Step: ', current_step + 1)
                 state, _ = self.env.reset()
                 self.pess_env.reset()
                 time, episode_reward = 0, 0
+                pess_episode_reward = 0
                 
             if current_step >= self.UPDATE_AFTER and current_step % self.UPDATE_EVERY == 0:
                 for _ in range(self.UPDATE_EVERY):
@@ -341,11 +346,11 @@ class SACagent(object):
 
     def save_paremeters(self, save_path):
         self.actor.save_weights(os.path.join(save_path, "robust_actor.h5"))
-        self.critic_1.save_weights(os.path.join(save_path, "robust_crtic.h5"))
+        self.critic_1.save_weights(os.path.join(save_path, "robust_crtic1.h5"))
         self.critic_2.save_weights(os.path.join(save_path, "robust_crtic2.h5"))
 
         self.pess_actor.save_weights(os.path.join(save_path, "pess_actor.h5"))
-        self.pess_critic_1.save_weights(os.path.join(save_path, "pess_crtic.h5"))
+        self.pess_critic_1.save_weights(os.path.join(save_path, "pess_crtic1.h5"))
         self.pess_critic_2.save_weights(os.path.join(save_path, "pess_crtic2.h5"))
         
 
