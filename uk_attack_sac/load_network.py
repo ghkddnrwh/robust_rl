@@ -10,19 +10,22 @@ import numpy as np
 import os
 
 def main():
-    R = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
+    R = [0, 0.01]
     # perturb_list = [0, 0.02, 0.04, 0.06, 0.08, 0.1]
-    parameter_perturb_list = [-0.1, -0.07, -0.03, 0, 0.03, 0.07, 0.1]
-    perturb_type = "Length"
+    parameter_perturb_list = [-0.8, -0.7, -0.6,-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3]
+    parameter_perturb_list = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0] # mass
+    parameter_perturb_list = [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40] #gravity
+    perturb_type = "Gravity"
     # R = [0.1]
     total_reward = []
-    train_num = 5
+    train_num = 6
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         env_name = 'Pendulum-v1'
 
-        total_save_path = os.path.join("data_sac", "pendul", "non_deepcopy", env_name, simulation_name)
+        root_save_path = os.path.join("data_sac", "pendul", "deepcopy_more_trial", env_name)
+        total_save_path = os.path.join(root_save_path, simulation_name)
         perturb_reward = []
         # for perturb in perturb_list:
         for perturb in parameter_perturb_list:
@@ -42,7 +45,7 @@ def main():
         total_reward.append(perturb_reward)
 
     print(total_reward)
-    np.save(os.path.join(total_save_path, "length_perturb_test"), np.array(total_reward))
+    np.save(os.path.join(root_save_path, "gravity_perturb_test"), np.array(total_reward))
 
 if __name__=="__main__":
     main()

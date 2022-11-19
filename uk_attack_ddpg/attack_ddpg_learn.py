@@ -62,7 +62,7 @@ class Critic(Model):
 ## DDPG 에이전트
 class DDPGagent(object):
 
-    def __init__(self, env, pess_env, R = 0):
+    def __init__(self, env, R = 0):
 
         # 하이퍼파라미터
         self.GAMMA = 0.99
@@ -85,10 +85,10 @@ class DDPGagent(object):
         self.R = R
         self.PESS_STEP = 5000
 
-        self.NUM_TEST_EPISODES = 100
+        self.NUM_TEST_EPISODES = 30
         
         self.env = env
-        self.pess_env = pess_env
+        self.pess_env = deepcopy(self.env)
         
         self.state_dim = env.observation_space.shape[0]
         self.action_dim = env.action_space.shape[0]
@@ -203,6 +203,48 @@ class DDPGagent(object):
         self.pess_actor.save_weights(os.path.join(save_path, "pess_actor.h5"))
         self.pess_critic.save_weights(os.path.join(save_path, "pess_crtic.h5"))
 
+    def test(self, perturb = 0, deterministic = True):
+        pess_distance = []
+        random_distance = []
+        worst_distance = []
+        for ep in range(int(self.NUM_TEST_EPISODES)):
+            time, episode_reward, done = 0, 0, False
+            state, _ = self.env.reset()
+
+            while not done:
+                p = np.random.rand()
+                if p < perturb:
+                    action = self.env.action_space.sample()
+                else:
+                    action = self.actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                    action = action.numpy()[0]
+                # pess_action = self.pess_actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                # pess_action = pess_action.numpy()[0]
+                # random_action = self.env.action_space.sample()
+
+                # pess_dis = np.sqrt(np.sum((action - pess_action)**2))
+                # random_dis = np.sqrt(np.sum((action - random_action)**2))
+
+                # pess_distance.append(pess_dis)
+                # random_distance.append(random_dis)
+                # worst_distance.append(np.abs(action) + 2)
+
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
+
+                state = next_state
+                episode_reward += reward
+                time += 1
+
+            self.save_epi_test_reward.append(episode_reward)
+            print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+
+        # print("Pess Distance : ", np.mean(np.array(pess_distance)))
+        # print("Random Distance : ", np.mean(np.array(random_distance)))
+        # print("Worst Distance : ", np.mean(np.array(worst_distance)))
+
+        return np.mean(self.save_epi_test_reward)
+
     ## 에이전트 학습
     def train(self):
         r = 0
@@ -213,6 +255,7 @@ class DDPGagent(object):
         time, episode_reward, done, episode_time = 0, 0, False, 0
         pess_episode_reward = 0
         state, _ = self.env.reset()
+        # self.pess_env = deepcopy(self.env)
         self.pess_env.reset()
 
         pre_noise = np.zeros(self.action_dim)
@@ -221,7 +264,6 @@ class DDPGagent(object):
         for current_step in range(total_steps):
             exact_state = self.env.get_exact_state()
             self.pess_env.set_state(exact_state)
-            # self.pess_env = deepcopy(self.env)
 
             action = self.actor(tf.convert_to_tensor([state], dtype=tf.float32))
             action = action.numpy()[0]
