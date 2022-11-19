@@ -102,7 +102,7 @@ class SACagent(object):
         self.R = R
         self.PESS_STEP = 5000
 
-        self.NUM_TEST_EPISODES = 100
+        self.NUM_TEST_EPISODES = 30
         
         self.env = env
         self.pess_env = pess_env
@@ -233,11 +233,11 @@ class SACagent(object):
 
     def load_weights(self, save_path):
         self.actor.load_weights(os.path.join(save_path, "robust_actor.h5"))
-        self.critic_1.load_weights(os.path.join(save_path, "robust_crtic1.h5"))
+        self.critic_1.load_weights(os.path.join(save_path, "robust_crtic.h5"))
         self.critic_2.load_weights(os.path.join(save_path, "robust_crtic2.h5"))
 
         self.pess_actor.load_weights(os.path.join(save_path, "pess_actor.h5"))
-        self.pess_critic_1.load_weights(os.path.join(save_path, "pess_crtic1.h5"))
+        self.pess_critic_1.load_weights(os.path.join(save_path, "pess_crtic.h5"))
         self.pess_critic_2.load_weights(os.path.join(save_path, "pess_crtic2.h5"))
 
     def test(self, perturb = 0, deterministic = True):
@@ -272,6 +272,7 @@ class SACagent(object):
         time, episode_reward, done, episode_time = 0, 0, False, 0
         pess_episode_reward = 0
         state, _ = self.env.reset()
+        self.pess_env = deepcopy(self.env)
         self.pess_env.reset()
 
         for current_step in range(total_steps):
@@ -346,11 +347,11 @@ class SACagent(object):
 
     def save_paremeters(self, save_path):
         self.actor.save_weights(os.path.join(save_path, "robust_actor.h5"))
-        self.critic_1.save_weights(os.path.join(save_path, "robust_crtic1.h5"))
+        self.critic_1.save_weights(os.path.join(save_path, "robust_crtic.h5"))
         self.critic_2.save_weights(os.path.join(save_path, "robust_crtic2.h5"))
 
         self.pess_actor.save_weights(os.path.join(save_path, "pess_actor.h5"))
-        self.pess_critic_1.save_weights(os.path.join(save_path, "pess_crtic1.h5"))
+        self.pess_critic_1.save_weights(os.path.join(save_path, "pess_crtic.h5"))
         self.pess_critic_2.save_weights(os.path.join(save_path, "pess_crtic2.h5"))
         
 

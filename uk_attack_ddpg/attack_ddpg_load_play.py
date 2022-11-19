@@ -1,36 +1,52 @@
-# DDPG load and play (tf2 subclassing API version)
+# SAC main (tf2 subclassing API version)
 # coded by St.Watermelon
-## 학습된 신경망 파라미터를 가져와서 에이전트를 실행시키는 파일
+## SAC 에이전트를 학습하고 결과를 도시하는 파일
 
 # 필요한 패키지 임포트
 import gym
-from ddpg_learn import DDPGagent
-import tensorflow as tf
+from attack_ddpg_learn import DDPGagent
+import numpy as np
+
+import os
 
 def main():
+    R = [0, 0.01]
+    # R = [0]
+    # perturb_list = [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.3, 0.35, 0.4]
+    parameter_perturb_list = [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
+    parameter_perturb_list = [-0.9, -0.8, -0.7]
+    # parameter_perturb_list = [0]
+    perturb_type = "Length"
+    # R = [0.1]
+    total_reward = []
+    train_num = 5
 
-    env = gym.make("Pendulum-v0") # 환경으로 OpenAI Gym의 pendulum-v0 설정
-    agent = DDPGagent(env) # DDPG 에이전트 객체
+    for r in R:
+        simulation_name = "Robust_RL_R=" + str(r)
+        env_name = 'Pendulum-v1'
 
-    agent.load_weights('./save_weights/')  # 신경망 파라미터 가져옴
+        root_save_path = os.path.join("data_ddpg", "pendul", "deepcopy_more_trial", env_name)
+        total_save_path = os.path.join(root_save_path, simulation_name)
+        perturb_reward = []
+        # for perturb in perturb_list:
+        for perturb in parameter_perturb_list:
+            trial_reward = []
+            for train_time in range(train_num):
+                save_path = os.path.join(total_save_path, "trial" + str(train_time))
+                # env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
+                env = gym.make(env_name, perturb_prob = perturb, perturb_type = perturb_type)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
+                agent = DDPGagent(env, r)   # A2C 에이전트 객체
+                agent.load_weights(save_path)
 
-    time = 0
-    state = env.reset()  # 환경을 초기화하고, 초기 상태 관측
+                # 학습 진행
+                # reward = agent.test(perturb)
+                reward = agent.test(0)
+                trial_reward.append(reward)
+            perturb_reward.append(np.mean(trial_reward))
+        total_reward.append(perturb_reward)
 
-    while True:
-        env.render()
-        # 행동 계산
-        action = agent.actor(tf.convert_to_tensor([state], dtype=tf.float32)).numpy()[0]
-        # 환경으로부터 다음 상태, 보상을 받음
-        state, reward, done, _ = env.step(action)
-        time += 1
-
-        print('Time: ', time, 'Reward: ', reward)
-
-        if done:
-            break
-
-    env.close()
+    print(total_reward)
+    np.save(os.path.join(root_save_path, "length_perturb_test5"), np.array(total_reward))
 
 if __name__=="__main__":
     main()
