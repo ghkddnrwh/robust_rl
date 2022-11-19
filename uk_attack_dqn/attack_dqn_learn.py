@@ -22,8 +22,8 @@ class Critic(Model):
 
         self.action_kind = action_kind
 
-        self.h1 = Dense(256, activation='relu')
-        self.h2 = Dense(256, activation='relu')
+        self.h1 = Dense(64, activation='relu')
+        self.h2 = Dense(64, activation='relu')
         self.q = Dense(self.action_kind)
 
 
@@ -36,11 +36,10 @@ class Critic(Model):
 
 ## DDPG 에이전트
 class DQNAgent(object):
-
-    def __init__(self, env, pess_env, R = 0):
+    def __init__(self, env, R = 0):
 
         # 하이퍼파라미터
-        self.GAMMA = 0.99
+        self.GAMMA = 0.95
         self.BATCH_SIZE = 100
         # self.BUFFER_SIZE = 1e6
         self.BUFFER_SIZE = 20000
@@ -55,19 +54,19 @@ class DQNAgent(object):
         # self.MAX_EP_LEN = 1000
         self.MAX_EP_LEN = 500
         self.TAU = 0.005
-        self.EPOCHS = 40
+        self.EPOCHS = 160
         # self.EPOCHS = 10
         self.R = R
         self.PESS_STEP = 5000
 
         self.EPSILON = 1.0
-        self.EPSILON_DECAY = 0.995
+        self.EPSILON_DECAY = 0.999
         self.EPSILON_MIN = 0.01
 
         self.NUM_TEST_EPISODES = 10
         
         self.env = env
-        self.pess_env = pess_env
+        self.pess_env = deepcopy(self.env)
         
         self.state_dim = env.observation_space.shape[0]
         self.action_kind = env.action_space.n
@@ -149,6 +148,38 @@ class DQNAgent(object):
         same_count = 0
         diff_count = 0
 
+        self.save_epi_test_reward = []
+        for ep in range(int(self.NUM_TEST_EPISODES)):
+            time, episode_reward, done = 0, 0, False
+            state, _ = self.env.reset()
+
+            while not done:
+                action = self.choose_action(state, self.critic, 0)
+                pess_action = self.choose_action(state, self.pess_critic, 0)
+
+                if pess_action == action:
+                    same_count += 1
+                else:
+                    diff_count += 1
+                # exact_state = self.env.get_exact_state()
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
+
+                state = next_state
+                episode_reward += reward
+                time += 1
+
+            self.save_epi_test_reward.append(episode_reward)
+            print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+        print("Same count : ", same_count)
+        print("Diff count : ", diff_count)
+        return np.mean(self.save_epi_test_reward)
+
+    def test_pess_action(self, perturb = 0):
+        same_count = 0
+        diff_count = 0
+
+        self.save_epi_test_reward = []
         for ep in range(int(self.NUM_TEST_EPISODES)):
             time, episode_reward, done = 0, 0, False
             state, _ = self.env.reset()
@@ -161,7 +192,7 @@ class DQNAgent(object):
                     same_count += 1
                 else:
                     diff_count += 1
-                next_state, reward, done, truncated, _ = self.env.step(action)
+                next_state, reward, done, truncated, _ = self.env.step(pess_action)
                 done = done or truncated
 
                 state = next_state
@@ -177,6 +208,7 @@ class DQNAgent(object):
     def test_with_pess(self, perturb = 0):
         same_count = 0
         diff_count = 0
+        # self.pess_env = deepcopy(self.env)
 
         for ep in range(int(self.NUM_TEST_EPISODES)):
             time, episode_reward, done = 0, 0, False
@@ -185,8 +217,9 @@ class DQNAgent(object):
             self.pess_env.reset()
 
             while not done:
-                exact_state = self.env.get_exact_state()
-                self.pess_env.set_state(exact_state)
+                
+                # self.pess_env.set_state(exact_state)
+                # self.pess_env = deepcopy(self.env)
 
                 action = self.choose_action(state, self.critic, self.EPSILON_MIN)
                 pess_action = self.choose_action(state, self.pess_critic, self.EPSILON_MIN)
@@ -196,16 +229,21 @@ class DQNAgent(object):
                 else:
                     diff_count += 1
                 next_state, reward, done, truncated, _ = self.env.step(action)
-                pess_next_state, pess_reward, pess_done, pess_truncated, _ = self.pess_env.step(pess_action)
+                # exact_state_buff1 = self.env.get_exact_state()
+                # pess_next_state, pess_reward, pess_done, pess_truncated, _ = self.pess_env.step(pess_action)
+                # self.pess_env.step(pess_action)
+                # exact_state_buff2 = self.env.get_exact_state()
+                # if not (exact_state_buff1 == exact_state_buff2).all():
+                    # print("Different State")
                 done = done or truncated
-                pess_done = pess_done or pess_truncated
+                # pess_done = pess_done or pess_truncated
 
-                if pess_done:
-                    self.pess_env.reset()
+                # if pess_done:
+                #     self.pess_env.reset()
 
                 state = next_state
                 episode_reward += reward
-                pess_episode_reward += pess_reward
+                # pess_episode_reward += pess_reward
                 time += 1
 
             self.save_epi_test_reward.append(episode_reward)
@@ -214,6 +252,94 @@ class DQNAgent(object):
         print("Same count : ", same_count)
         print("Diff count : ", diff_count)
         return np.mean(self.save_epi_test_reward)
+
+    # ## 에이전트 학습
+    # def test_train(self):
+    #     r = 0
+    #     total_steps = self.STEPS_PER_EPOCH * self.EPOCHS
+    #     time, episode_reward, done, episode_time = 0, 0, False, 0
+    #     pess_episode_reward = 0
+    #     state, _ = self.env.reset()
+
+    #     same_count = 0
+    #     diff_count = 0
+
+    #     for current_step in range(total_steps):
+    #         action = self.choose_action(state, self.critic, self.EPSILON)
+    #         pess_action = self.choose_action(state, self.pess_critic, self.EPSILON)
+
+    #         if current_step >= self.PESS_STEP:
+    #             if pess_action == action:
+    #                 same_count += 1
+    #                 ep_same_count += 1
+    #             else:
+    #                 diff_count += 1
+    #                 ep_diff_count += 1
+
+    #         next_state, reward, done, truncated, _ = self.env.step(action)
+    #         pess_next_state, pess_reward, pess_done, pess_truncated, _ = self.pess_env.step(pess_action)
+
+    #         done = done or truncated
+    #         pess_done = pess_done or pess_truncated
+    #         pess_reward = pess_reward
+    #         time += 1
+    #         done = False if time == self.MAX_EP_LEN else done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
+    #         pess_done = False if time == self.MAX_EP_LEN else pess_done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
+    #         self.buffer.add_buffer(state, action, reward, next_state, done, pess_action, pess_reward, pess_next_state, pess_done)
+
+    #         state = next_state
+    #         episode_reward += reward
+    #         pess_episode_reward += pess_reward
+
+    #         if pess_done:
+    #             self.pess_env.reset()
+
+    #         if current_step >= self.START_STEPS and self.EPSILON > self.EPSILON_MIN:
+    #             self.EPSILON *= self.EPSILON_DECAY    
+
+    #         if done or (time == self.MAX_EP_LEN):
+    #             episode_time += 1
+    #             self.save_epi_reward.append(episode_reward)
+    #             self.pess_save_epi_reward.append(pess_episode_reward)
+    #             # print("Action: ", action, "Pess Action: ", pess_action)
+    #             print("Same Count : ", ep_same_count, "Diff Count : ", ep_diff_count)
+    #             print("Episode Time: ", episode_time, 'Reward: ', episode_reward, "Pess Reward: ", pess_episode_reward, 'Time: ', time, 'Current Step: ', current_step + 1)
+    #             state, _ = self.env.reset()
+    #             self.pess_env.reset()
+
+    #             if current_step >= self.UPDATE_AFTER:
+    #                 for _ in range(time):
+    #                     # 리플레이 버퍼에서 샘플 무작위 추출
+    #                     states, actions, rewards, next_states, dones, pess_actions, pess_rewards, pess_next_states, pess_dones = self.buffer.sample_batch(self.BATCH_SIZE)
+                        
+    #                     v_target_qs = self.critic(tf.convert_to_tensor(next_states, dtype=tf.float32))
+    #                     r_target_qs = self.critic(tf.convert_to_tensor(pess_next_states, dtype = tf.float32))
+    #                     pess_target_qs = self.pess_critic(tf.convert_to_tensor(pess_next_states, dtype=tf.float32))
+                    
+    #                     y_i = self.td_target(rewards, v_target_qs.numpy(), dones, r, r_target_qs)
+    #                     pess_y_i = self.td_target(pess_rewards, pess_target_qs, pess_dones, 0, pess_target_qs)
+
+    #                     self.critic_learn(tf.convert_to_tensor(states, dtype=tf.float32),
+    #                                     actions,
+    #                                     tf.convert_to_tensor(y_i, dtype=tf.float32), self.critic)
+
+    #                     self.critic_learn(tf.convert_to_tensor(states, dtype=tf.float32),
+    #                                     pess_actions,
+    #                                     tf.convert_to_tensor(pess_y_i, dtype=tf.float32), self.pess_critic)
+                        
+    #                     self.update_target_network(self.TAU, self.critic, self.target_critic)
+    #                     self.update_target_network(self.TAU, self.pess_critic, self.pess_target_critic)
+
+    #             time, episode_reward = 0, 0
+    #             pess_episode_reward = 0
+    #             ep_same_count = ep_diff_count = 0
+
+    #         if current_step == self.PESS_STEP:
+    #             r = self.R
+        
+    #     print("Same count : ", same_count)
+    #     print("Diff count : ", diff_count)
+    #     return self.save_epi_reward
 
     ## 에이전트 학습
     def train(self):
@@ -225,20 +351,19 @@ class DQNAgent(object):
         time, episode_reward, done, episode_time = 0, 0, False, 0
         pess_episode_reward = 0
         state, _ = self.env.reset()
+        # self.pess_env = deepcopy(self.env)
         self.pess_env.reset()
 
         same_count = 0
         diff_count = 0
 
-        state_same_count = 0
-        state_diff_count = 0
-
         ep_same_count = 0
         ep_diff_count = 0
 
         for current_step in range(total_steps):
-            exact_state = self.env.get_exact_state()
-            self.pess_env.set_state(exact_state)
+            # exact_state = self.env.get_exact_state()
+            # self.pess_env.set_state(exact_state)
+            self.pess_env = deepcopy(self.env)
 
             action = self.choose_action(state, self.critic, self.EPSILON)
             pess_action = self.choose_action(state, self.pess_critic, self.EPSILON)
@@ -254,15 +379,9 @@ class DQNAgent(object):
             next_state, reward, done, truncated, _ = self.env.step(action)
             pess_next_state, pess_reward, pess_done, pess_truncated, _ = self.pess_env.step(pess_action)
 
-            if current_step >= self.PESS_STEP:
-                if (next_state == pess_next_state).all():
-                    state_same_count += 1
-                else:
-                    state_diff_count += 1
-
             done = done or truncated
             pess_done = pess_done or pess_truncated
-            pess_reward = - pess_reward
+            pess_reward = pess_reward
             time += 1
             done = False if time == self.MAX_EP_LEN else done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
             pess_done = False if time == self.MAX_EP_LEN else pess_done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
@@ -319,8 +438,6 @@ class DQNAgent(object):
         
         print("Same count : ", same_count)
         print("Diff count : ", diff_count)
-        print("State Same count : ", state_same_count)
-        print("State Diff count : ", state_diff_count)
         return self.save_epi_reward
                 
     ## 에피소드와 누적 보상값을 그려주는 함수
