@@ -39,10 +39,10 @@ class DQNagent(object):
     def __init__(self, env):
 
         ## hyperparameters
-        self.GAMMA = 0.95
-        self.BATCH_SIZE = 32
-        self.BUFFER_SIZE = 100000
-        self.DQN_LEARNING_RATE = 0.001
+        self.GAMMA = 0.99
+        self.BATCH_SIZE = 100
+        self.BUFFER_SIZE = 20000
+        self.DQN_LEARNING_RATE = 0.0001
         self.TAU = 0.001
         self.EPSILON = 1.0
         self.EPSILON_DECAY = 0.995

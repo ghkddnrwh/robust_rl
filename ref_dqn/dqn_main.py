@@ -8,10 +8,10 @@ import os
 def main():
     # simulation_name = "Robust_RL_R=" + str(r)
     env_name = 'Acrobot-v1'
-    train_num = 1
+    train_num = 5
     total_reward = []    
     total_test_reward = []
-    total_save_path = os.path.join("test", "iisl2", "dqn", "acrobot20", env_name)
+    total_save_path = os.path.join("test", "iisl2", "dqn", "acrobot4", env_name)
     for train_time in range(train_num):
         save_path = os.path.join(total_save_path, "trial" + str(train_time))
         try:
@@ -23,7 +23,7 @@ def main():
         except:
             print("Something wrong")
             return 0
-        max_episode_num = 100
+        max_episode_num = 300
         env_name = 'Acrobot-v1'
         env = gym.make(env_name)
         agent = DQNagent(env)
@@ -36,7 +36,7 @@ def main():
 
         # agent.plot_result()
         print(reward)
-        print(train_reward)
+        # print(train_reward)
         print(test_reward)
         print(test_reward2)
 

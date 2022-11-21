@@ -22,8 +22,8 @@ class Critic(Model):
 
         self.action_kind = action_kind
 
-        self.h1 = Dense(64, activation='relu')
-        self.h2 = Dense(64, activation='relu')
+        self.h1 = Dense(256, activation='relu')
+        self.h2 = Dense(256, activation='relu')
         self.q = Dense(self.action_kind)
 
 
@@ -39,12 +39,13 @@ class DQNAgent(object):
     def __init__(self, env, R = 0):
 
         # 하이퍼파라미터
-        self.GAMMA = 0.95
+        self.GAMMA = 0.99
         self.BATCH_SIZE = 100
         # self.BUFFER_SIZE = 1e6
         self.BUFFER_SIZE = 20000
         # self.ACTOR_LEARNING_RATE = 1e-4
-        self.CRITIC_LEARNING_RATE = 1e-3
+        self.CRITIC_LEARNING_RATE = 1e-5
+        # self.CRITIC_LEARNING_RATE = R
         # self.STEPS_PER_EPOCH = 4000
         self.STEPS_PER_EPOCH = 500
         # self.START_STEPS = 10000
@@ -54,13 +55,13 @@ class DQNAgent(object):
         # self.MAX_EP_LEN = 1000
         self.MAX_EP_LEN = 500
         self.TAU = 0.005
-        self.EPOCHS = 160
+        self.EPOCHS = 150
         # self.EPOCHS = 10
         self.R = R
         self.PESS_STEP = 5000
 
         self.EPSILON = 1.0
-        self.EPSILON_DECAY = 0.999
+        self.EPSILON_DECAY = 0.9995
         self.EPSILON_MIN = 0.01
 
         self.NUM_TEST_EPISODES = 10
@@ -381,7 +382,7 @@ class DQNAgent(object):
 
             done = done or truncated
             pess_done = pess_done or pess_truncated
-            pess_reward = pess_reward
+            pess_reward = - pess_reward
             time += 1
             done = False if time == self.MAX_EP_LEN else done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
             pess_done = False if time == self.MAX_EP_LEN else pess_done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
