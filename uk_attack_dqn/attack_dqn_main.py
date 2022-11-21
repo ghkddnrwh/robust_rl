@@ -14,7 +14,6 @@ def main():
     R = [0]
     
     # learning_rate_list = [1e-5, 3e-5, 5e-5, 7e-5]
-
     # for l_index in range(len(learning_rate_list)):
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)

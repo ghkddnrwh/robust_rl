@@ -11,7 +11,7 @@ def main():
     train_num = 5
     total_reward = []    
     total_test_reward = []
-    total_save_path = os.path.join("test", "iisl2", "dqn", "acrobot1", env_name)
+    total_save_path = os.path.join("test", "iisl2", "dqn", "acrobot4", env_name)
     for train_time in range(train_num):
         save_path = os.path.join(total_save_path, "trial" + str(train_time))
         try:
