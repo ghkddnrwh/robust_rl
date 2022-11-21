@@ -1,5 +1,5 @@
 import enum
-import gym
+# import gym
 from copy import deepcopy
 import numpy as np
 
@@ -8,54 +8,69 @@ import tensorflow as tf
 
 import time
 
+zero = 0
+one = 0
 
-env_name = 'CartPole-v1'
-env = gym.make(env_name)
-seed = 1
-
-state_record = []
-pess_state_record = []
-
-# pess_env = deepcopy(env)
-pess_env = gym.make(env_name)
-
-env.reset(seed = seed)
-for i in range(10):
-    state, _, _, _, _ = env.step(0)
-    state_record.append(state)
-
-env.reset(seed = seed)
-for i in range(10):
-    print(state[0])
-    pess_env.reset()
-    exact_state = env.get_exact_state()
-    pess_env.set_state(exact_state)
-    # env.set_state(exact_state)
-    state, _, _, _, _ = env.step(0)
-    exact_state1 = env.get_exact_state()
-    pess_state, _, _, _, _ = pess_env.step(1)
-    exact_state2 = env.get_exact_state()
-
-    if(exact_state1 != exact_state2):
-        print("Something Wrong")
-
-
-    if(state[0] == pess_state[0]):
-        print("Same State")
+logits = [[10.0, 1.0]]
+logits = np.array(logits)
+for i in range(10000):
+    action = tf.random.categorical(logits, 1)
+    if action == 0:
+        zero+=1
     else:
-        print("Different State")
+        one+=1
+
+print(zero / (zero + one))
+print(np.array(action)[0, 0])
+# print(action)
+
+# env_name = 'CartPole-v1'
+# env = gym.make(env_name)
+# seed = 1
+
+# state_record = []
+# pess_state_record = []
+
+# # pess_env = deepcopy(env)
+# pess_env = gym.make(env_name)
+
+# env.reset(seed = seed)
+# for i in range(10):
+#     state, _, _, _, _ = env.step(0)
+#     state_record.append(state)
+
+# env.reset(seed = seed)
+# for i in range(10):
+#     print(state[0])
+#     pess_env.reset()
+#     exact_state = env.get_exact_state()
+#     pess_env.set_state(exact_state)
+#     # env.set_state(exact_state)
+#     state, _, _, _, _ = env.step(0)
+#     exact_state1 = env.get_exact_state()
+#     pess_state, _, _, _, _ = pess_env.step(1)
+#     exact_state2 = env.get_exact_state()
+
+#     if(exact_state1 != exact_state2):
+#         print("Something Wrong")
 
 
-    pess_state_record.append(state)
+#     if(state[0] == pess_state[0]):
+#         print("Same State")
+#     else:
+#         print("Different State")
 
-# print(state_record)
-# print(pess_state_record)
-state_record = np.array(state_record)
-pess_state_record = np.array(pess_state_record)
-if(state_record == pess_state_record).all():
-    print("Same")
-else:
-    print("Different")
+
+#     pess_state_record.append(state)
+
+# # print(state_record)
+# # print(pess_state_record)
+# state_record = np.array(state_record)
+# pess_state_record = np.array(pess_state_record)
+# if(state_record == pess_state_record).all():
+#     print("Same")
+# else:
+#     print("Different")
 
 
 

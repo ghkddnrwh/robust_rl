@@ -107,6 +107,7 @@ class PPOagent(object):
         # print(logits.numpy())
         logp_all = tf.nn.log_softmax(logits)
         # print(logp_all.numpy())
+        # print(np.exp(logp_all.numpy()))
         # tf.random.categorical(tf.math.log([[0.5, 0.5]]), 5)
         # action = tf.argmax(logits, axis = 1)
         # print(action1)

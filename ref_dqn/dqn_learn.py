@@ -41,8 +41,8 @@ class DQNagent(object):
         ## hyperparameters
         self.GAMMA = 0.95
         self.BATCH_SIZE = 32
-        self.BUFFER_SIZE = 100000
-        self.DQN_LEARNING_RATE = 0.001
+        self.BUFFER_SIZE = 20000
+        self.DQN_LEARNING_RATE = 0.0001
         self.TAU = 0.001
         self.EPSILON = 1.0
         self.EPSILON_DECAY = 0.995
