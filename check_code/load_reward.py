@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 # import gym
 import os
 
-
-save_simulation = os.path.join("data_dqn", "tanh", "acrobot")
+save_simulation = os.path.join("data_dqn", "tanh", "cartpole")
 
 # map_name = "8x8"
 data_name = "reward.txt"
@@ -20,7 +19,7 @@ if __name__=="__main__":
     for r in R:
 
         simulation_name = "Robust_RL_R=" + str(r)
-        env_name = 'Acrobot-v1'
+        env_name = 'CartPole-v1'
 
         # save_path = os.path.join("data_sac", "pendul", "pess_q_trial2", env_name, simulation_name)
         total_reward = np.loadtxt(os.path.join(save_simulation, env_name, simulation_name, data_name))

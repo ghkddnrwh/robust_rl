@@ -41,8 +41,8 @@ class Critic(Model):
 
         self.action_kind = action_kind
 
-        self.h1 = Dense(128, activation='tanh')
-        self.h2 = Dense(128, activation='tanh')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.q = Dense(self.action_kind)
 
 
@@ -80,9 +80,9 @@ class DQNAgent(object):
         self.R = R
         self.PESS_STEP = 5000
 
-        self.EPSILON = 1.0
-        self.EPSILON_DECAY = 0.9995
-        self.EPSILON_MIN = 0.01
+        # self.EPSILON = 1.0
+        # self.EPSILON_DECAY = 0.9995
+        # self.EPSILON_MIN = 0.01
 
         self.NUM_TEST_EPISODES = 10
         
@@ -171,10 +171,6 @@ class DQNAgent(object):
             q = critic(states)
             q_values = tf.reduce_sum(one_hot_actions * q, axis=1, keepdims=True)
             q_values = q_values.numpy()
-            # actions, _ = self.get_policy_action(states, actor, training = True)
-            # one_hot_actions = tf.one_hot(actions, self.action_kind)
-            # q = critic(states)
-            # q_values = tf.reduce_sum(one_hot_actions * q, axis=1, keepdims=True)
 
             loss_policy = log_pdfs * q_values
             loss = tf.reduce_sum(-loss_policy)
@@ -283,6 +279,7 @@ class DQNAgent(object):
             # action = self.choose_action(state, self.critic, self.EPSILON)
             action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
             action = action.numpy()[0]
+
             # pess_action = self.choose_action(state, self.pess_critic, self.EPSILON)
             pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
             pess_action = pess_action.numpy()[0]
@@ -295,6 +292,16 @@ class DQNAgent(object):
                 pess_clt = self.pess_critic(tf.convert_to_tensor([state], dtype = tf.float32))
                 print(clt.numpy(), pess_clt.numpy())
             # print(action)
+
+            if current_step % 30 == 0:
+                print("Action : ", action, pess_action)
+                act = self.actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                pess_act = self.pess_actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                print(act.numpy(), pess_act.numpy())
+                clt = self.critic(tf.convert_to_tensor([state], dtype = tf.float32))
+                pess_clt = self.pess_critic(tf.convert_to_tensor([state], dtype = tf.float32))
+                print(clt.numpy(), pess_clt.numpy())
+            
 
             if current_step >= self.PESS_STEP:
                 if pess_action == action:
@@ -322,8 +329,8 @@ class DQNAgent(object):
             if pess_done or pess_truncated:
                 self.pess_env.reset()
 
-            if current_step >= self.START_STEPS and self.EPSILON > self.EPSILON_MIN:
-                self.EPSILON *= self.EPSILON_DECAY    
+            # if current_step >= self.START_STEPS and self.EPSILON > self.EPSILON_MIN:
+            #     self.EPSILON *= self.EPSILON_DECAY    
 
             if done or (time == self.MAX_EP_LEN):
                 episode_time += 1

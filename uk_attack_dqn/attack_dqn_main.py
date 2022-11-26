@@ -10,9 +10,8 @@ import numpy as np
 import os
 
 def main():
-    R = [0, 0.01, 0.02]
-    R = [0, 0.01, 0.02]
-    # R = [0]
+    # R = [0, 0.01, 0.02]
+    R = [0.01]
     
     # learning_rate_list = [1e-5, 3e-5, 5e-5, 7e-5]
     # for l_index in range(len(learning_rate_list)):
