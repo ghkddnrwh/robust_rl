@@ -11,17 +11,18 @@ import os
 
 def main():
     R = [0, 0.01, 0.02]
-    R = [0]
+    R = [0, 0.01, 0.02]
+    # R = [0]
     
     # learning_rate_list = [1e-5, 3e-5, 5e-5, 7e-5]
     # for l_index in range(len(learning_rate_list)):
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
-        env_name = 'CartPole-v1'
+        env_name = 'Acrobot-v1'
         train_num = 5
         total_reward = []    
         total_test_reward = []
-        total_save_path = os.path.join("test", "test", "test13", env_name, simulation_name)
+        total_save_path = os.path.join("ac_discrete", "tanh", "acrobot", env_name, simulation_name)
         for train_time in range(train_num):
             save_path = os.path.join(total_save_path, "trial" + str(train_time))
             try:

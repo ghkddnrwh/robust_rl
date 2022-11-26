@@ -320,6 +320,7 @@ class DDPGagent(object):
                     next_state_actions = tf.convert_to_tensor(tf.concat([next_states, next_actions], axis = -1), dtype = tf.float32)
                     v_target_qs = self.target_critic(next_state_actions)
 
+                    # 얘를 어떻게 바라보는게 Robustness에 어떤 영향을 주는지 확인해보기
                     pess_next_actions = self.pess_target_actor(tf.convert_to_tensor(pess_next_states, dtype=tf.float32))
                     pess_next_state_actions = tf.convert_to_tensor(tf.concat([pess_next_states, pess_next_actions], axis = -1), dtype = tf.float32)
                     r_target_qs = self.target_critic(pess_next_state_actions)

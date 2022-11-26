@@ -46,7 +46,7 @@ def main():
         total_reward.append(perturb_reward)
 
     print(total_reward)
-    np.save(os.path.join(root_save_path, "length_perturb_test5"), np.array(total_reward))
+    np.save(os.path.join(root_save_path, "length_perturb_test"), np.array(total_reward))
 
 if __name__=="__main__":
     main()
