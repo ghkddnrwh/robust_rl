@@ -21,8 +21,8 @@ class Actor(Model):
         super(Actor, self).__init__()
         self.action_kind = action_kind
 
-        self.h1 = Dense(256, activation='relu')
-        self.h2 = Dense(256, activation='relu')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.c = Dense(action_kind)
 
 
@@ -41,8 +41,8 @@ class Critic(Model):
 
         self.action_kind = action_kind
 
-        self.h1 = Dense(256, activation='relu')
-        self.h2 = Dense(256, activation='relu')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.q = Dense(self.action_kind)
 
 
@@ -74,14 +74,15 @@ class DQNAgent(object):
         # self.MAX_EP_LEN = 1000
         self.MAX_EP_LEN = 500
         self.TAU = 0.005
-        self.EPOCHS = 150
-        # self.EPOCHS = 10
+        # self.EPOCHS = 150
+        self.EPOCHS = 120
+        # self.EPOCHS = 40
         self.R = R
         self.PESS_STEP = 5000
 
-        self.EPSILON = 1.0
-        self.EPSILON_DECAY = 0.9995
-        self.EPSILON_MIN = 0.01
+        # self.EPSILON = 1.0
+        # self.EPSILON_DECAY = 0.9995
+        # self.EPSILON_MIN = 0.01
 
         self.NUM_TEST_EPISODES = 10
         
@@ -133,8 +134,8 @@ class DQNAgent(object):
 
 
     ## 액터 신경망으로 정책의 평균, 표준편차를 계산하고 행동 샘플링
-    def get_policy_action(self, state, actor):
-        logits = actor(state)
+    def get_policy_action(self, state, actor, training = False):
+        logits = actor(state, training = training)
         logp_all = tf.nn.log_softmax(logits)
         action = tf.squeeze(tf.random.categorical(logits, 1), axis = 1)
         logp_action = tf.reduce_sum(tf.one_hot(action, depth = self.action_kind) * logp_all, axis = 1, keepdims=True)
@@ -165,10 +166,11 @@ class DQNAgent(object):
 
     def actor_learn(self, states, actor, critic):
         with tf.GradientTape() as tape:
-            actions, log_pdfs = self.get_policy_action(states, actor)
+            actions, log_pdfs = self.get_policy_action(states, actor, True)
             one_hot_actions = tf.one_hot(actions, self.action_kind)
             q = critic(states)
             q_values = tf.reduce_sum(one_hot_actions * q, axis=1, keepdims=True)
+            q_values = q_values.numpy()
 
             loss_policy = log_pdfs * q_values
             loss = tf.reduce_sum(-loss_policy)
@@ -187,24 +189,28 @@ class DQNAgent(object):
         self.critic_opt.apply_gradients(zip(grads, critic.trainable_variables))
 
     def td_target(self, rewards, v_target_qs, dones, r, r_target_qs):
-        v_max_q = np.max(v_target_qs, axis=1, keepdims=True)
-        r_max_q = np.max(r_target_qs, axis = 1, keepdims=True)
-        y_k = np.zeros(v_max_q.shape)
-        for i in range(v_max_q.shape[0]): # number of batch
+        y_k = np.zeros(v_target_qs.shape)
+        for i in range(v_target_qs.shape[0]): # number of batch
             if dones[i]:
                 y_k[i] = rewards[i]
             else:
-                y_k[i] = rewards[i] + self.GAMMA * (r * r_max_q[i] + (1 - r) * v_max_q[i])
+                y_k[i] = rewards[i] + self.GAMMA * (r * r_target_qs[i] + (1 - r) * v_target_qs[i])
         return y_k
 
     ## 신경망 파라미터 로드
     def load_weights(self, save_path):
-        self.critic.load_weights(os.path.join(save_path, "robust_crtic.h5"))
-        self.pess_critic.load_weights(os.path.join(save_path, "pess_crtic.h5"))
+        self.actor.load_weights(os.path.join(save_path, "robust_actor.h5"))
+        self.pess_actor.load_weights(os.path.join(save_path, "pess_actor.h5"))
+
+        self.critic.load_weights(os.path.join(save_path, "robust_critic.h5"))
+        self.pess_critic.load_weights(os.path.join(save_path, "pess_critic.h5"))
 
     def save_paremeters(self, save_path):
-        self.critic.save_weights(os.path.join(save_path, "robust_crtic.h5"))
-        self.pess_critic.save_weights(os.path.join(save_path, "pess_crtic.h5"))
+        self.actor.save_weights(os.path.join(save_path, "robust_actor.h5"))
+        self.pess_actor.save_weights(os.path.join(save_path, "pess_actor.h5"))
+
+        self.critic.save_weights(os.path.join(save_path, "robust_critic.h5"))
+        self.pess_critic.save_weights(os.path.join(save_path, "pess_critic.h5"))
 
     def test(self, perturb = 0):
         same_count = 0
@@ -218,17 +224,20 @@ class DQNAgent(object):
             while not done:
                 # action = self.choose_action(state, self.critic, 0)
                 # pess_action = self.choose_action(state, self.pess_critic, 0)
-
-                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.target_actor)
-                action = action.numpy()[0]
-                
-                pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_target_actor)
-                pess_action = pess_action.numpy()[0]
-
-                if pess_action == action:
-                    same_count += 1
+                p = np.random.rand()
+                if p < perturb:
+                    action = self.env.action_space.sample()
                 else:
-                    diff_count += 1
+                    action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+                    action = action.numpy()[0]
+                
+                    pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
+                    pess_action = pess_action.numpy()[0]
+
+                    if pess_action == action:
+                        same_count += 1
+                    else:
+                        diff_count += 1
                 # exact_state = self.env.get_exact_state()
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 done = done or truncated
@@ -263,17 +272,27 @@ class DQNAgent(object):
         ep_diff_count = 0
 
         for current_step in range(total_steps):
-            exact_state = self.env.get_exact_state()
-            self.pess_env.set_state(exact_state)
-            # self.pess_env = deepcopy(self.env)
+            # exact_state = self.env.get_exact_state()
+            # self.pess_env.set_state(exact_state)
+            self.pess_env = deepcopy(self.env)
 
             # action = self.choose_action(state, self.critic, self.EPSILON)
-            action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.target_actor)
-            # print(action)
+            action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
             action = action.numpy()[0]
+
             # pess_action = self.choose_action(state, self.pess_critic, self.EPSILON)
-            pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_target_actor)
+            pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
             pess_action = pess_action.numpy()[0]
+
+            if current_step % 30 == 0:
+                print("Action : ", action, pess_action)
+                act = self.actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                pess_act = self.pess_actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                print(act.numpy(), pess_act.numpy())
+                clt = self.critic(tf.convert_to_tensor([state], dtype = tf.float32))
+                pess_clt = self.pess_critic(tf.convert_to_tensor([state], dtype = tf.float32))
+                print(clt.numpy(), pess_clt.numpy())
+            
 
             if current_step >= self.PESS_STEP:
                 if pess_action == action:
@@ -287,22 +306,22 @@ class DQNAgent(object):
             pess_next_state, pess_reward, pess_done, pess_truncated, _ = self.pess_env.step(pess_action)
 
             done = done or truncated
-            pess_done = pess_done or pess_truncated
+            # pess_done = pess_done or pess_truncated
             pess_reward = - pess_reward
             time += 1
             done = False if time == self.MAX_EP_LEN else done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
-            pess_done = False if time == self.MAX_EP_LEN else pess_done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
+            # pess_done = False if time == self.MAX_EP_LEN else pess_done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
             self.buffer.add_buffer(state, action, reward, next_state, done, pess_action, pess_reward, pess_next_state, pess_done)
 
             state = next_state
             episode_reward += reward
             pess_episode_reward += pess_reward
 
-            if pess_done:
+            if pess_done or pess_truncated:
                 self.pess_env.reset()
 
-            if current_step >= self.START_STEPS and self.EPSILON > self.EPSILON_MIN:
-                self.EPSILON *= self.EPSILON_DECAY    
+            # if current_step >= self.START_STEPS and self.EPSILON > self.EPSILON_MIN:
+            #     self.EPSILON *= self.EPSILON_DECAY    
 
             if done or (time == self.MAX_EP_LEN):
                 episode_time += 1
@@ -321,13 +340,26 @@ class DQNAgent(object):
                 for _ in range(self.UPDATE_EVERY):
                     # 리플레이 버퍼에서 샘플 무작위 추출
                     states, actions, rewards, next_states, dones, pess_actions, pess_rewards, pess_next_states, pess_dones = self.buffer.sample_batch(self.BATCH_SIZE)
+
+                    v_next_actions, _ = self.get_policy_action(next_states, self.target_actor)
+                    r_next_actions, _ = self.get_policy_action(pess_next_states, self.target_actor)
+                    pess_next_actions, _ = self.get_policy_action(pess_next_states, self.pess_target_actor)
+
+                    v_one_hot_actions = tf.one_hot(v_next_actions, self.action_kind)
+                    r_one_hot_actions = tf.one_hot(r_next_actions, self.action_kind)
+                    pess_one_hot_actions = tf.one_hot(pess_next_actions, self.action_kind)
                     
                     v_target_qs = self.critic(tf.convert_to_tensor(next_states, dtype=tf.float32))
                     r_target_qs = self.critic(tf.convert_to_tensor(pess_next_states, dtype = tf.float32))
                     pess_target_qs = self.pess_critic(tf.convert_to_tensor(pess_next_states, dtype=tf.float32))
+
+                    v_target_qs = tf.reduce_sum(v_one_hot_actions * v_target_qs, axis=1, keepdims=True)
+                    r_target_qs = tf.reduce_sum(r_one_hot_actions * r_target_qs, axis=1, keepdims=True)
+                    pess_target_qs = tf.reduce_sum(pess_one_hot_actions * pess_target_qs, axis=1, keepdims=True)
+                    # print(v_target_qs.numpy().shape)
                 
-                    y_i = self.td_target(rewards, v_target_qs.numpy(), dones, r, r_target_qs)
-                    pess_y_i = self.td_target(pess_rewards, pess_target_qs, pess_dones, 0, pess_target_qs)
+                    y_i = self.td_target(rewards, v_target_qs.numpy(), dones, r, r_target_qs.numpy())
+                    pess_y_i = self.td_target(pess_rewards, pess_target_qs.numpy(), pess_dones, 0, pess_target_qs.numpy())
 
                     self.critic_learn(tf.convert_to_tensor(states, dtype=tf.float32),
                                    actions,
