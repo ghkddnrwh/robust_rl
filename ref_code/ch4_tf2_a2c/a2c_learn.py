@@ -172,17 +172,15 @@ class A2Cagent(object):
 
         # 에피소드마다 다음을 반복
         for ep in range(int(max_episode_num)):
-            print("Enter episode : ", ep)
 
             # 배치 초기화
             batch_state, batch_action, batch_reward, batch_next_state, batch_done = [], [], [], [], []
             # 에피소드 초기화
-            time, episode_reward, done, truncated = 0, 0, False, False
+            time, episode_reward, done = 0, 0, False
             # 환경 초기화 및 초기 상태 관측
-            state, info = self.env.reset()
+            state = self.env.reset()
 
-            while not done and not truncated:
-
+            while not done:
 
                 # 학습 가시화
                 #self.env.render()
@@ -192,7 +190,7 @@ class A2Cagent(object):
                 # 행동 범위 클리핑
                 action = np.clip(action, -self.action_bound, self.action_bound)
                 # 다음 상태, 보상 관측
-                next_state, reward, done, truncated, _ = self.env.step(action)
+                next_state, reward, done, _ = self.env.step(action)
                 # shape 변환
                 state = np.reshape(state, [1, self.state_dim])
                 action = np.reshape(action, [1, self.action_dim])
@@ -225,7 +223,6 @@ class A2Cagent(object):
                 next_states = self.unpack_batch(batch_next_state)
                 dones = self.unpack_batch(batch_done)
 
-                print("Shape ", states)
                 # 배치 비움
                 batch_state, batch_action, batch_reward, batch_next_state, batch_done = [], [], [], [], []
 
@@ -260,12 +257,12 @@ class A2Cagent(object):
 
 
             # 에피소드 10번마다 신경망 파라미터를 파일에 저장
-            # if ep % 10 == 0:
-            #     self.actor.save_weights("./save_weights/pendulum_actor.h5")
-            #     self.critic.save_weights("./save_weights/pendulum_critic.h5")
+            if ep % 10 == 0:
+                self.actor.save_weights("./save_weights/pendulum_actor.h5")
+                self.critic.save_weights("./save_weights/pendulum_critic.h5")
 
         # 학습이 끝난 후, 누적 보상값 저장
-        # np.savetxt('./save_weights/pendulum_epi_reward.txt', self.save_epi_reward)
+        np.savetxt('./save_weights/pendulum_epi_reward.txt', self.save_epi_reward)
         print(self.save_epi_reward)
 
 

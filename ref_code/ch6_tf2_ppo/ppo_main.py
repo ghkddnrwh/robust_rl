@@ -9,7 +9,7 @@ import gym
 def main():
 
     max_episode_num = 1000  # 최대 에피소드 설정
-    env_name = 'Pendulum-v1'
+    env_name = 'Pendulum-v0'
     env = gym.make(env_name) # 환경으로 OpenAI Gym의 pendulum-v0 설정
     agent = PPOagent(env) # PPO 에이전트 객체
 

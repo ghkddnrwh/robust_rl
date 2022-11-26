@@ -1,6 +1,6 @@
-## 리플레이 버퍼 클래스 파일
+# Replay Buffer
+# coded by St.Watermelon
 
-# 필요한 패키지 임포트
 import numpy as np
 from collections import deque
 import random
@@ -14,25 +14,25 @@ class ReplayBuffer(object):
         self.buffer = deque()
         self.count = 0
 
-    ## 버퍼에 저장
+    ## save to buffer
     def add_buffer(self, state, action, reward, next_state, done):
         transition = (state, action, reward, next_state, done)
 
-        # 버퍼가 꽉 찼는지 확인
+        # check if buffer is full
         if self.count < self.buffer_size:
             self.buffer.append(transition)
             self.count += 1
-        else: # 찼으면 가장 오래된 데이터 삭제하고 저장
+        else:
             self.buffer.popleft()
             self.buffer.append(transition)
 
-    ## 버퍼에서 데이터 무작위로 추출 (배치 샘플링)
+    ## sample a batch
     def sample_batch(self, batch_size):
         if self.count < batch_size:
             batch = random.sample(self.buffer, self.count)
         else:
             batch = random.sample(self.buffer, batch_size)
-        # 상태, 행동, 보상, 다음 상태별로 정리
+        # return a batch of transitions
         states = np.asarray([i[0] for i in batch])
         actions = np.asarray([i[1] for i in batch])
         rewards = np.asarray([i[2] for i in batch])
@@ -41,13 +41,12 @@ class ReplayBuffer(object):
         return states, actions, rewards, next_states, dones
 
 
-    ## 버퍼 사이즈 계산
+    ## Current buffer occupation
     def buffer_count(self):
         return self.count
 
 
-    ## 버퍼 비움
+    ## Clear buffer
     def clear_buffer(self):
         self.buffer = deque()
         self.count = 0
-

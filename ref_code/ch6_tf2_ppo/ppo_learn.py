@@ -192,7 +192,7 @@ class PPOagent(object):
             # 에피소드 초기화
             time, episode_reward, done = 0, 0, False
             # 환경 초기화 및 초기 상태 관측
-            state, _ = self.env.reset()
+            state = self.env.reset()
 
             while not done:
 
@@ -207,8 +207,7 @@ class PPOagent(object):
                 log_old_policy_pdf = -0.5 * (action - mu_old) ** 2 / var_old - 0.5 * np.log(var_old * 2 * np.pi)
                 log_old_policy_pdf = np.sum(log_old_policy_pdf)
                 # 다음 상태, 보상 관측
-                next_state, reward, done, truncated, _ = self.env.step(action)
-                done = done or truncated
+                next_state, reward, done, _ = self.env.step(action)
                 # shape 변환
                 state = np.reshape(state, [1, self.state_dim])
                 action = np.reshape(action, [1, self.action_dim])
@@ -264,13 +263,13 @@ class PPOagent(object):
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
             self.save_epi_reward.append(episode_reward)
 
-            # # 에피소드 10번마다 신경망 파라미터를 파일에 저장
-            # if ep % 10 == 0:
-            #     self.actor.save_weights("./save_weights/pendulum_actor.h5")
-            #     self.critic.save_weights("./save_weights/pendulum_critic.h5")
+            # 에피소드 10번마다 신경망 파라미터를 파일에 저장
+            if ep % 10 == 0:
+                self.actor.save_weights("./save_weights/pendulum_actor.h5")
+                self.critic.save_weights("./save_weights/pendulum_critic.h5")
 
         # 학습이 끝난 후, 누적 보상값 저장
-        # np.savetxt('./save_weights/pendulum_epi_reward.txt', self.save_epi_reward)
+        np.savetxt('./save_weights/pendulum_epi_reward.txt', self.save_epi_reward)
         print(self.save_epi_reward)
 
 

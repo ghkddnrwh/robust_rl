@@ -1,3 +1,6 @@
+# DQN learn (tf2 subclassing API version)
+# coded by St.Watermelon
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,23 +11,36 @@ import tensorflow as tf
 
 from replaybuffer import ReplayBuffer
 
+class Actor(Model):
+    def __init__(self, action_kind):
+        super(Actor, self).__init__()
 
-# Q network
-class DQN(Model):
-
-    def __init__(self, action_n):
-        super(DQN, self).__init__()
-
-        self.h1 = Dense(64, activation='relu')
-        self.h2 = Dense(32, activation='relu')
-        self.h3 = Dense(16, activation='relu')
-        self.q = Dense(action_n, activation='linear')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
+        self.c = Dense(action_kind)
 
 
     def call(self, x):
         x = self.h1(x)
         x = self.h2(x)
-        x = self.h3(x)
+        c = self.c(x)
+
+        return c
+
+# Q network
+class DQN(Model):
+
+    def __init__(self, action_kind):
+        super(DQN, self).__init__()
+
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
+        self.q = Dense(action_kind)
+
+
+    def call(self, x):
+        x = self.h1(x)
+        x = self.h2(x)
         q = self.q(x)
         return q
 
@@ -35,10 +51,18 @@ class DQNagent(object):
 
         ## hyperparameters
         self.GAMMA = 0.95
-        self.BATCH_SIZE = 32
+        self.BATCH_SIZE = 100
         self.BUFFER_SIZE = 20000
+        self.ACTOR_LEARNING_RATE = 0.0001
         self.DQN_LEARNING_RATE = 0.001
-        self.TAU = 0.001
+        self.TAU = 0.005
+
+        self.STEPS_PER_EPOCH = 500
+        self.UPDATE_AFTER = 1000
+        self.UPDATE_EVERY = 50
+        self.MAX_EP_LEN = 500
+
+
         self.EPSILON = 1.0
         self.EPSILON_DECAY = 0.995
         self.EPSILON_MIN = 0.01
@@ -47,18 +71,26 @@ class DQNagent(object):
 
         # get state dimension and action number
         self.state_dim = env.observation_space.shape[0]  # 4
-        self.action_n = env.action_space.n   # 2
+        self.action_kind = env.action_space.n   # 2
+
+        self.actor = Actor(self.action_kind)
+        self.target_actor = Actor(self.action_kind)
 
         ## create Q networks
-        self.dqn = DQN(self.action_n)
-        self.target_dqn = DQN(self.action_n)
+        self.dqn = DQN(self.action_kind)
+        self.target_dqn = DQN(self.action_kind)
+
+        self.actor.build(input_shape=(None, self.state_dim))
+        self.target_actor.build(input_shape=(None, self.state_dim))
 
         self.dqn.build(input_shape=(None, self.state_dim))
         self.target_dqn.build(input_shape=(None, self.state_dim))
 
+        self.actor.summary()
         self.dqn.summary()
 
         # optimizer
+        self.actor_opt = Adam(self.ACTOR_LEARNING_RATE)
         self.dqn_opt = Adam(self.DQN_LEARNING_RATE)
 
         ## initialize replay buffer
@@ -66,6 +98,31 @@ class DQNagent(object):
 
         # save the results
         self.save_epi_reward = []
+        self.save_epi_test_reward = []
+
+
+    def get_policy_action(self, state, actor, training = False):
+        logits = actor(state, training = training)
+        logp_all = tf.nn.log_softmax(logits)
+        action = tf.squeeze(tf.random.categorical(logits, 1), axis = 1)
+        logp_action = tf.reduce_sum(tf.one_hot(action, depth = self.action_kind) * logp_all, axis = 1, keepdims=True)
+        
+        return action, logp_action
+
+
+    def actor_learn(self, states, actor, critic):
+        with tf.GradientTape() as tape:
+            actions, log_pdfs = self.get_policy_action(states, actor, True)
+            one_hot_actions = tf.one_hot(actions, self.action_kind)
+            q = critic(states)
+            q_values = tf.reduce_sum(one_hot_actions * q, axis=1, keepdims=True)
+            q_values = q_values.numpy()
+
+            loss_policy = log_pdfs * q_values
+            loss = tf.reduce_sum(-loss_policy)
+
+        grads = tape.gradient(loss, actor.trainable_variables)
+        self.actor_opt.apply_gradients(zip(grads, actor.trainable_variables))
 
 
     ## get action
@@ -89,7 +146,7 @@ class DQNagent(object):
     ## single gradient update on a single batch data
     def dqn_learn(self, states, actions, td_targets):
         with tf.GradientTape() as tape:
-            one_hot_actions = tf.one_hot(actions, self.action_n)
+            one_hot_actions = tf.one_hot(actions, self.action_kind)
             q = self.dqn(states, training=True)
             q_values = tf.reduce_sum(one_hot_actions * q, axis=1, keepdims=True)
             loss = tf.reduce_mean(tf.square(q_values-td_targets))
@@ -114,29 +171,62 @@ class DQNagent(object):
     def load_weights(self, path):
         self.dqn.load_weights(path + 'cartpole_dqn.h5')
 
+    def test(self, test_num):
+        for ep in range(int(test_num)):
+            time, episode_reward, done = 0, 0, False
+            ep_time = 0
+            state, _ = self.env.reset()
+
+            while not done:
+                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+                action = action.numpy()[0]
+                if ep_time % 100 == 0:
+                    print("Action : ", action)
+                    qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
+                    print(qs.numpy())
+
+                # observe reward, new_state
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
+
+                state = next_state
+                episode_reward += reward
+                time += 1
+                ep_time += 1
+
+            print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+
+            self.save_epi_test_reward.append(episode_reward)
+        return np.mean(self.save_epi_test_reward)
 
     ## train the agent
     def train(self, max_episode_num):
 
-        # initial transfer model weights to target model network
+
         self.update_target_network(1.0)
+        ep_time = 0
 
         for ep in range(int(max_episode_num)):
 
             # reset episode
             time, episode_reward, done = 0, 0, False
             # reset the environment and observe the first state
-            state = self.env.reset()
+            state, _ = self.env.reset()
 
             while not done:
-                # visualize the environment
-                #self.env.render()
-                # pick an action
-                action = self.choose_action(state)
-                # observe reward, new_state
-                next_state, reward, done, _ = self.env.step(action)
+                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+                action = action.numpy()[0]
+                if ep_time % 100 == 0:
+                    print("Action : ", action)
+                    qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
+                    print(qs.numpy())
 
-                train_reward = reward + time*0.01
+                # observe reward, new_state
+                next_state, reward, done, truncated, _ = self.env.step(action)
+                done = done or truncated
+
+                # train_reward = reward + time*0.01
+                train_reward = reward
 
                 # add transition to replay buffer
                 self.buffer.add_buffer(state, action, train_reward, next_state, done)
@@ -157,11 +247,14 @@ class DQNagent(object):
                     # compute TD targets
                     y_i = self.td_target(rewards, target_qs.numpy(), dones)
 
+                    
+
                     # train critic using sampled batch
                     self.dqn_learn(tf.convert_to_tensor(states, dtype=tf.float32),
                                    actions,
                                    tf.convert_to_tensor(y_i, dtype=tf.float32))
 
+                    self.actor_learn(tf.convert_to_tensor(states, dtype=tf.float32), self.actor, self.dqn)
 
                     # update target network
                     self.update_target_network(self.TAU)
@@ -171,18 +264,19 @@ class DQNagent(object):
                 state = next_state
                 episode_reward += reward
                 time += 1
+                ep_time += 1
 
 
             ## display rewards every episode
-            print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
+            print('Episode: ', ep+1, 'Time: ', time, "Ep Time: ", ep_time, 'Reward: ', episode_reward)
 
             self.save_epi_reward.append(episode_reward)
 
-
+        return self.save_epi_reward
             ## save weights every episode
-            self.dqn.save_weights("./save_weights/cartpole_dqn.h5")
+            # self.dqn.save_weights("./save_weights/cartpole_dqn.h5")
 
-        np.savetxt('./save_weights/cartpole_epi_reward.txt', self.save_epi_reward)
+        # np.savetxt('./save_weights/cartpole_epi_reward.txt', self.save_epi_reward)
 
     ## save them to file if done
     def plot_result(self):

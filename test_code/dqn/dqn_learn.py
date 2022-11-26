@@ -1,4 +1,4 @@
-# Double DQN learn (tf2 subclassing API version)
+# DQN learn (tf2 subclassing API version)
 # coded by St.Watermelon
 
 import numpy as np
@@ -13,10 +13,10 @@ from replaybuffer import ReplayBuffer
 
 
 # Q network
-class DoubleDQN(Model):
+class DQN(Model):
 
     def __init__(self, action_n):
-        super(DoubleDQN, self).__init__()
+        super(DQN, self).__init__()
 
         self.h1 = Dense(64, activation='relu')
         self.h2 = Dense(32, activation='relu')
@@ -32,7 +32,7 @@ class DoubleDQN(Model):
         return q
 
 
-class DoubleDQNagent(object):
+class DQNagent(object):
 
     def __init__(self, env):
 
@@ -40,7 +40,7 @@ class DoubleDQNagent(object):
         self.GAMMA = 0.95
         self.BATCH_SIZE = 32
         self.BUFFER_SIZE = 20000
-        self.DDQN_LEARNING_RATE = 0.001
+        self.DQN_LEARNING_RATE = 0.001
         self.TAU = 0.001
         self.EPSILON = 1.0
         self.EPSILON_DECAY = 0.995
@@ -53,16 +53,16 @@ class DoubleDQNagent(object):
         self.action_n = env.action_space.n   # 2
 
         ## create Q networks
-        self.doubledqn = DoubleDQN(self.action_n)
-        self.target_doubledqn = DoubleDQN(self.action_n)
+        self.dqn = DQN(self.action_n)
+        self.target_dqn = DQN(self.action_n)
 
-        self.doubledqn.build(input_shape=(None, self.state_dim))
-        self.target_doubledqn.build(input_shape=(None, self.state_dim))
+        self.dqn.build(input_shape=(None, self.state_dim))
+        self.target_dqn.build(input_shape=(None, self.state_dim))
 
-        self.doubledqn.summary()
+        self.dqn.summary()
 
         # optimizer
-        self.doubledqn_opt = Adam(self.DDQN_LEARNING_RATE)
+        self.dqn_opt = Adam(self.DQN_LEARNING_RATE)
 
         ## initialize replay buffer
         self.buffer = ReplayBuffer(self.BUFFER_SIZE)
@@ -76,35 +76,34 @@ class DoubleDQNagent(object):
         if np.random.random() <= self.EPSILON:
             return self.env.action_space.sample()
         else:
-            qs = self.doubledqn(tf.convert_to_tensor([state], dtype=tf.float32))
+            qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
             return np.argmax(qs.numpy())
 
 
     ## transfer actor weights to target actor with a tau
     def update_target_network(self, TAU):
-        phi = self.doubledqn.get_weights()
-        target_phi = self.target_doubledqn.get_weights()
+        phi = self.dqn.get_weights()
+        target_phi = self.target_dqn.get_weights()
         for i in range(len(phi)):
             target_phi[i] = TAU * phi[i] + (1 - TAU) * target_phi[i]
-        self.target_doubledqn.set_weights(target_phi)
+        self.target_dqn.set_weights(target_phi)
 
 
     ## single gradient update on a single batch data
-    def doubledqn_learn(self, states, actions, td_targets):
+    def dqn_learn(self, states, actions, td_targets):
         with tf.GradientTape() as tape:
             one_hot_actions = tf.one_hot(actions, self.action_n)
-            q = self.doubledqn(states, training=True)
+            q = self.dqn(states, training=True)
             q_values = tf.reduce_sum(one_hot_actions * q, axis=1, keepdims=True)
             loss = tf.reduce_mean(tf.square(q_values-td_targets))
 
-        grads = tape.gradient(loss, self.doubledqn.trainable_variables)
-        self.doubledqn_opt.apply_gradients(zip(grads, self.doubledqn.trainable_variables))
+        grads = tape.gradient(loss, self.dqn.trainable_variables)
+        self.dqn_opt.apply_gradients(zip(grads, self.dqn.trainable_variables))
 
 
     ## computing TD target: y_k = r_k + gamma* max Q(s_k+1, a)
-    def td_target(self, rewards, target_qs, max_a, dones):
-        one_hot_max_a = tf.one_hot(max_a, self.action_n)
-        max_q = tf.reduce_sum(one_hot_max_a * target_qs, axis=1, keepdims=True)
+    def td_target(self, rewards, target_qs, dones):
+        max_q = np.max(target_qs, axis=1, keepdims=True)
         y_k = np.zeros(max_q.shape)
         for i in range(max_q.shape[0]): # number of batch
             if dones[i]:
@@ -116,27 +115,8 @@ class DoubleDQNagent(object):
 
     ## load actor weights
     def load_weights(self, path):
-        self.doubledqn.load_weights(path + 'cartpole_ddqn.h5')
+        self.dqn.load_weights(path + 'cartpole_dqn.h5')
 
-    def test(self, test_step):
-        self.save_epi_test_reward = []
-
-        for ep in range(test_step):
-            time, episode_reward, done = 0, 0, False
-            state, _ = self.env.reset()
-
-            while not done:
-                action = self.choose_action(state)
-
-                next_state, reward, done, truncated, _ = self.env.step(action)
-                done = done or truncated
-
-                state = next_state
-                episode_reward += reward
-                time += 1
-            self.save_epi_test_reward.append(episode_reward)
-
-        return np.mean(self.save_epi_test_reward)
 
     ## train the agent
     def train(self, max_episode_num):
@@ -161,8 +141,7 @@ class DoubleDQNagent(object):
                 done = done or truncated
 
                 # train_reward = reward + time*0.01
-                train_reward =reward
-
+                train_reward = reward
 
                 # add transition to replay buffer
                 self.buffer.add_buffer(state, action, train_reward, next_state, done)
@@ -176,19 +155,15 @@ class DoubleDQNagent(object):
                     # sample transitions from replay buffer
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
-                    # compute max_a = argmax Q_phi(next_states, a)
-                    curr_net_qs = self.doubledqn(tf.convert_to_tensor(next_states, dtype=tf.float32))
-                    max_a = np.argmax(curr_net_qs.numpy(), axis=1)
-
                     # predict target Q-values
-                    target_qs = self.target_doubledqn(tf.convert_to_tensor(
+                    target_qs = self.target_dqn(tf.convert_to_tensor(
                                                         next_states, dtype=tf.float32))
 
                     # compute TD targets
-                    y_i = self.td_target(rewards, target_qs.numpy(), max_a, dones)
+                    y_i = self.td_target(rewards, target_qs.numpy(), dones)
 
                     # train critic using sampled batch
-                    self.doubledqn_learn(tf.convert_to_tensor(states, dtype=tf.float32),
+                    self.dqn_learn(tf.convert_to_tensor(states, dtype=tf.float32),
                                    actions,
                                    tf.convert_to_tensor(y_i, dtype=tf.float32))
 
@@ -210,7 +185,7 @@ class DoubleDQNagent(object):
 
 
             ## save weights every episode
-            # self.doubledqn.save_weights("./save_weights/cartpole_ddqn.h5")
+            # self.dqn.save_weights("./save_weights/cartpole_dqn.h5")
 
         # np.savetxt('./save_weights/cartpole_epi_reward.txt', self.save_epi_reward)
 
