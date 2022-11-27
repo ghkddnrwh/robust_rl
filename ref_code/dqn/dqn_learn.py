@@ -9,6 +9,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
 from copy import deepcopy
+import os
 
 from replaybuffer import ReplayBuffer
 
@@ -48,7 +49,7 @@ class DQN(Model):
 
 class DQNagent(object):
 
-    def __init__(self, env):
+    def __init__(self, env, R):
 
         ## hyperparameters
         self.GAMMA = 0.99
@@ -63,8 +64,10 @@ class DQNagent(object):
         self.UPDATE_EVERY = 50
         self.EPOCHS = 40
         # self.MAX_EP_LEN = 500
-        self.R = 0
+        self.R = R
         self.PESS_STEP = 5000
+
+        self.TEST_STEP = 10
 
         self.env = env
         self.pess_env = deepcopy(env)
@@ -185,15 +188,26 @@ class DQNagent(object):
         return y_k
 
 
-    ## load actor weights
-    def load_weights(self, path):
-        self.dqn.load_weights(path + 'cartpole_dqn.h5')
+    def load_weights(self, save_path):
+        self.actor.load_weights(os.path.join(save_path, "robust_actor.h5"))
+        self.pess_actor.load_weights(os.path.join(save_path, "pess_actor.h5"))
 
-    def test(self, test_num):
+        self.dqn.load_weights(os.path.join(save_path, "robust_dqn.h5"))
+        self.pess_dqn.load_weights(os.path.join(save_path, "pess_dqn.h5"))
+
+    def save_paremeters(self, save_path):
+        self.actor.save_weights(os.path.join(save_path, "robust_actor.h5"))
+        self.pess_actor.save_weights(os.path.join(save_path, "pess_actor.h5"))
+
+        self.dqn.save_weights(os.path.join(save_path, "robust_dqn.h5"))
+        self.pess_dqn.save_weights(os.path.join(save_path, "pess_dqn.h5"))
+
+
+    def test(self):
         same_count = 0
         diff_count = 0
         
-        for ep in range(int(test_num)):
+        for ep in range(int(self.TEST_STEP)):
             time, episode_reward, done = 0, 0, False
             ep_time = 0
             state, _ = self.env.reset()
