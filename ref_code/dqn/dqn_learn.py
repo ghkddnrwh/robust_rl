@@ -172,14 +172,16 @@ class DQNagent(object):
 
 
     ## computing TD target: y_k = r_k + gamma* max Q(s_k+1, a)
-    def td_target(self, rewards, target_qs, dones):
-        max_q = np.max(target_qs, axis=1, keepdims=True)
-        y_k = np.zeros(max_q.shape)
-        for i in range(max_q.shape[0]): # number of batch
+    def td_target(self, rewards, v_target_qs, dones, r_target_qs, r):
+        v_max_q = np.max(v_target_qs, axis = 1, keepdims=True)
+        # 얘를 min으로 할지 아니면 max로 할지 생각해보기
+        r_min_q = np.min(r_target_qs, axis = 1, keepdims=True)
+        y_k = np.zeros(v_max_q.shape)
+        for i in range(v_max_q.shape[0]): # number of batch
             if dones[i]:
                 y_k[i] = rewards[i]
             else:
-                y_k[i] = rewards[i] + self.GAMMA * max_q[i]
+                y_k[i] = rewards[i] + self.GAMMA * ((1 - r) * v_max_q[i] + r * r_min_q[i])
         return y_k
 
 
@@ -308,16 +310,19 @@ class DQNagent(object):
                     states, actions, rewards, next_states, dones, pess_actions, pess_rewards, pess_next_states, pess_dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
                     # predict target Q-values
-                    target_qs = self.target_dqn(tf.convert_to_tensor(
+                    v_target_qs = self.target_dqn(tf.convert_to_tensor(
                                                         next_states, dtype=tf.float32))
+
+                    r_target_qs = self.target_dqn(tf.convert_to_tensor(
+                                                        pess_next_states, dtype=tf.float32))
 
                     pess_target_qs = self.pess_target_dqn(tf.convert_to_tensor(
                                                         pess_next_states, dtype=tf.float32))
 
                     # compute TD targets
-                    y_i = self.td_target(rewards, target_qs.numpy(), dones)
+                    y_i = self.td_target(rewards, v_target_qs.numpy(), dones, r_target_qs.numpy(), r)
 
-                    pess_y_i = self.td_target(pess_rewards, pess_target_qs.numpy(), pess_dones)
+                    pess_y_i = self.td_target(pess_rewards, pess_target_qs.numpy(), pess_dones, pess_target_qs.numpy(), 0)
 
                     # train critic using sampled batch
                     self.dqn_learn(tf.convert_to_tensor(states, dtype=tf.float32),
