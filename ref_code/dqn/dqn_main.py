@@ -8,13 +8,11 @@ def main():
     episode_train_reward = []
     episode_test_reward = []
     for i in range(3):
-
-        max_episode_num = 500
         env_name = 'CartPole-v1'
         env = gym.make(env_name)
         agent = DQNagent(env)
 
-        train_reward = agent.train(max_episode_num)
+        train_reward = agent.train()
         test_reward = agent.test(10)
 
         episode_train_reward.append(train_reward)

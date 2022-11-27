@@ -15,8 +15,8 @@ class ReplayBuffer(object):
         self.count = 0
 
     ## save to buffer
-    def add_buffer(self, state, action, reward, next_state, done):
-        transition = (state, action, reward, next_state, done)
+    def add_buffer(self, state, action, reward, next_state, done, pess_action, pess_reward, pess_next_state, pess_done):
+        transition = (state, action, reward, next_state, done, pess_action, pess_reward, pess_next_state, pess_done)
 
         # check if buffer is full
         if self.count < self.buffer_size:
@@ -38,7 +38,12 @@ class ReplayBuffer(object):
         rewards = np.asarray([i[2] for i in batch])
         next_states = np.asarray([i[3] for i in batch])
         dones = np.asarray([i[4] for i in batch])
-        return states, actions, rewards, next_states, dones
+        pess_actions = np.asarray([i[5] for i in batch])
+        pess_rewards = np.asarray([i[6] for i in batch])
+        pess_next_states = np.asarray([i[7] for i in batch])
+        pess_dones = np.asarray([i[8] for i in batch])
+        
+        return states, actions, rewards, next_states, dones, pess_actions, pess_rewards, pess_next_states, pess_dones
 
 
     ## Current buffer occupation
