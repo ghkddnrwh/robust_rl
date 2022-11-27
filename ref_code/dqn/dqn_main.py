@@ -5,19 +5,22 @@ from dqn_learn import DQNagent
 import gym
 
 def main():
+    episode_train_reward = []
     episode_test_reward = []
-    for i in range(10):
+    for i in range(3):
 
-        max_episode_num = 50
-        env_name = 'Acrobot-v1'
+        max_episode_num = 500
+        env_name = 'CartPole-v1'
         env = gym.make(env_name)
         agent = DQNagent(env)
 
-        agent.train(max_episode_num)
+        train_reward = agent.train(max_episode_num)
         test_reward = agent.test(10)
 
+        episode_train_reward.append(train_reward)
         episode_test_reward.append(test_reward)
 
+    print(episode_train_reward)
     print(episode_test_reward)
 
     # agent.plot_result()

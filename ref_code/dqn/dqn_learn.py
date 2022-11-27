@@ -33,8 +33,8 @@ class DQN(Model):
     def __init__(self, action_kind):
         super(DQN, self).__init__()
 
-        self.h1 = Dense(128, activation='relu')
-        self.h2 = Dense(128, activation='relu')
+        self.h1 = Dense(128, activation='tanh')
+        self.h2 = Dense(128, activation='tanh')
         self.q = Dense(action_kind)
 
 
@@ -50,11 +50,11 @@ class DQNagent(object):
     def __init__(self, env):
 
         ## hyperparameters
-        self.GAMMA = 0.95
+        self.GAMMA = 0.99
         self.BATCH_SIZE = 100
         self.BUFFER_SIZE = 20000
-        self.ACTOR_LEARNING_RATE = 0.0001
-        self.DQN_LEARNING_RATE = 0.001
+        self.ACTOR_LEARNING_RATE = 0.00003
+        self.DQN_LEARNING_RATE = 0.0003
         self.TAU = 0.005
 
         self.STEPS_PER_EPOCH = 500
@@ -271,6 +271,9 @@ class DQNagent(object):
             print('Episode: ', ep+1, 'Time: ', time, "Ep Time: ", ep_time, 'Reward: ', episode_reward)
 
             self.save_epi_reward.append(episode_reward)
+        
+        print(self.dqn.get_weights())
+        # print(self.dqn.get_weights())
 
         return self.save_epi_reward
             ## save weights every episode
