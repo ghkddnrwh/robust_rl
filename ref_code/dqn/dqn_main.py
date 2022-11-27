@@ -7,7 +7,7 @@ import gym
 def main():
     episode_train_reward = []
     episode_test_reward = []
-    for i in range(3):
+    for i in range(4):
         env_name = 'CartPole-v1'
         env = gym.make(env_name)
         agent = DQNagent(env)
