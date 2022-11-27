@@ -61,7 +61,7 @@ class DQNagent(object):
         self.STEPS_PER_EPOCH = 500
         self.UPDATE_AFTER = 1000
         self.UPDATE_EVERY = 50
-        self.EPOCHS = 40
+        self.EPOCHS = 120
         # self.MAX_EP_LEN = 500
         self.R = 0
         self.PESS_STEP = 5000
