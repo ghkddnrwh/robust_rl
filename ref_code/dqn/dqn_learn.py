@@ -33,8 +33,8 @@ class DQN(Model):
     def __init__(self, action_kind):
         super(DQN, self).__init__()
 
-        self.h1 = Dense(128, activation='relu')
-        self.h2 = Dense(128, activation='relu')
+        self.h1 = Dense(128, activation='tanh')
+        self.h2 = Dense(128, activation='tanh')
         self.q = Dense(action_kind)
 
 
@@ -50,22 +50,23 @@ class DQNagent(object):
     def __init__(self, env):
 
         ## hyperparameters
-        self.GAMMA = 0.95
+        self.GAMMA = 0.99
         self.BATCH_SIZE = 100
         self.BUFFER_SIZE = 20000
-        self.ACTOR_LEARNING_RATE = 0.0001
-        self.DQN_LEARNING_RATE = 0.001
+        self.ACTOR_LEARNING_RATE = 0.00003
+        self.DQN_LEARNING_RATE = 0.0003
         self.TAU = 0.005
 
         self.STEPS_PER_EPOCH = 500
         self.UPDATE_AFTER = 1000
         self.UPDATE_EVERY = 50
-        self.MAX_EP_LEN = 500
+        self.EPOCHS = 40
+        # self.MAX_EP_LEN = 500
 
 
-        self.EPSILON = 1.0
-        self.EPSILON_DECAY = 0.995
-        self.EPSILON_MIN = 0.01
+        # self.EPSILON = 1.0
+        # self.EPSILON_DECAY = 0.995
+        # self.EPSILON_MIN = 0.01
 
         self.env = env
 
@@ -200,43 +201,43 @@ class DQNagent(object):
         return np.mean(self.save_epi_test_reward)
 
     ## train the agent
-    def train(self, max_episode_num):
-
-
+    def train(self):
         self.update_target_network(1.0)
-        ep_time = 0
+        
+        total_steps = self.STEPS_PER_EPOCH * self.EPOCHS
+        time, episode_reward, done, episode_time = 0, 0, False, 0
+        state, _ = self.env.reset()
 
-        for ep in range(int(max_episode_num)):
+        for current_step in range(int(total_steps)):
+            action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+            action = action.numpy()[0]
+            if current_step % 100 == 0:
+                print("Action : ", action)
+                qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
+                print(qs.numpy())
 
-            # reset episode
-            time, episode_reward, done = 0, 0, False
-            # reset the environment and observe the first state
-            state, _ = self.env.reset()
+            # observe reward, new_state
+            next_state, reward, done, truncated, _ = self.env.step(action)
+            train_reward = reward
 
-            while not done:
-                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
-                action = action.numpy()[0]
-                if ep_time % 100 == 0:
-                    print("Action : ", action)
-                    qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
-                    print(qs.numpy())
+            # add transition to replay buffer
+            self.buffer.add_buffer(state, action, train_reward, next_state, done)
 
-                # observe reward, new_state
-                next_state, reward, done, truncated, _ = self.env.step(action)
-                done = done or truncated
+            state = next_state
+            episode_reward += reward
+            time += 1
 
-                # train_reward = reward + time*0.01
-                train_reward = reward
+            if done or truncated:
+                episode_time += 1
+                self.save_epi_reward.append(episode_reward)
+                print('Episode: ', episode_time, 'Time: ', time, "Current Step: ", current_step + 1, 'Reward: ', episode_reward)
+                state, _ = self.env.reset()
 
-                # add transition to replay buffer
-                self.buffer.add_buffer(state, action, train_reward, next_state, done)
+                time, episode_reward = 0, 0
 
-                if self.buffer.buffer_count() > 1000:  # start train after buffer has some amounts
 
-                    # decaying EPSILON
-                    if self.EPSILON > self.EPSILON_MIN:
-                        self.EPSILON *= self.EPSILON_DECAY
-
+            if current_step >= self.UPDATE_AFTER and current_step % self.UPDATE_EVERY == 0:
+                for _ in range(self.UPDATE_EVERY):
                     # sample transitions from replay buffer
                     states, actions, rewards, next_states, dones = self.buffer.sample_batch(self.BATCH_SIZE)
 
@@ -259,24 +260,8 @@ class DQNagent(object):
                     # update target network
                     self.update_target_network(self.TAU)
 
-
-                # update current state
-                state = next_state
-                episode_reward += reward
-                time += 1
-                ep_time += 1
-
-
-            ## display rewards every episode
-            print('Episode: ', ep+1, 'Time: ', time, "Ep Time: ", ep_time, 'Reward: ', episode_reward)
-
-            self.save_epi_reward.append(episode_reward)
-
         return self.save_epi_reward
-            ## save weights every episode
-            # self.dqn.save_weights("./save_weights/cartpole_dqn.h5")
 
-        # np.savetxt('./save_weights/cartpole_epi_reward.txt', self.save_epi_reward)
 
     ## save them to file if done
     def plot_result(self):
