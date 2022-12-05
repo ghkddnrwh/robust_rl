@@ -55,17 +55,18 @@ class DQNagent(object):
         self.GAMMA = 0.99
         self.BATCH_SIZE = 100
         self.BUFFER_SIZE = 20000
-        self.ACTOR_LEARNING_RATE = 0.00003
-        self.DQN_LEARNING_RATE = 0.0003
+        self.ACTOR_LEARNING_RATE = 0.0001
+        self.DQN_LEARNING_RATE = 0.001
         self.TAU = 0.005
 
-        self.STEPS_PER_EPOCH = 500
-        self.UPDATE_AFTER = 1000
+        self.STEPS_PER_EPOCH = 200
+        self.UPDATE_AFTER = 50000
         self.UPDATE_EVERY = 50
-        self.EPOCHS = 40
+        self.EPOCHS = 250
         # self.MAX_EP_LEN = 500
         self.R = R
         self.PESS_STEP = 5000
+        self.START_STEP = 50000
 
         self.TEST_STEP = 10
 
@@ -203,7 +204,7 @@ class DQNagent(object):
         self.pess_dqn.save_weights(os.path.join(save_path, "pess_dqn.h5"))
 
 
-    def test(self):
+    def test(self, perturb = 0):
         same_count = 0
         diff_count = 0
         
@@ -213,23 +214,21 @@ class DQNagent(object):
             state, _ = self.env.reset()
 
             while not done:
-                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
-                action = action.numpy()[0]
-
-                pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
-                pess_action = pess_action.numpy()[0]
-
-                if action == pess_action:
-                    same_count += 1
+                p = np.random.rand()
+                if p < perturb:
+                    action = self.env.action_space.sample()
                 else:
-                    diff_count += 1
+                    action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+                    action = action.numpy()[0]
 
-                # if ep_time % 100 == 0:
-                #     print("Action : ", action)
-                #     qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
-                #     print(qs.numpy())
+                    pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
+                    pess_action = pess_action.numpy()[0]
 
-                # observe reward, new_state
+                    if action == pess_action:
+                        same_count += 1
+                    else:
+                        diff_count += 1
+
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 done = done or truncated
 
@@ -264,12 +263,16 @@ class DQNagent(object):
 
         for current_step in range(int(total_steps)):
             self.pess_env = deepcopy(self.env)
+            
+            if current_step > self.START_STEP:
+                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+                action = action.numpy()[0]
 
-            action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
-            action = action.numpy()[0]
-
-            pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
-            pess_action = pess_action.numpy()[0]
+                pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
+                pess_action = pess_action.numpy()[0]
+            else:
+                action = self.env.action_space.sample()
+                pess_action = self.pess_env.action_space.sample()
 
             if current_step > self.PESS_STEP:
                 if action == pess_action:
@@ -308,6 +311,10 @@ class DQNagent(object):
                 self.pess_save_epi_reward.append(pess_episode_reward)
                 print("Same Count : ", ep_same_count, "Diff Count : ", ep_diff_count)
                 print('Episode: ', episode_time, 'Time: ', time, "Current Step: ", current_step + 1, 'Reward: ', episode_reward, "Pess Reward: ", pess_episode_reward)
+                if episode_reward < -200:
+                    print("Find")
+                    while True:
+                        x = 1
                 state, _ = self.env.reset()
                 self.pess_env.reset()
 

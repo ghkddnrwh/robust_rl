@@ -8,11 +8,12 @@ import gym
 import os
 
 def main():
-    R = [0, 0.1, 0.2, 0.3, 0.4]
+    # R = [0.025, 0.05, 0.075]
+    R = [0]
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
-        env_name = 'CartPole-v1'
+        env_name = 'MountainCar-v0'
 
         train_num = 5
         episode_train_reward = []
