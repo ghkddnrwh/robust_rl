@@ -5,16 +5,16 @@ import matplotlib.pyplot as plt
 import gym
 import os
 
-save_simulation = os.path.join("data", "more_trial", "attack_q")
+save_simulation = os.path.join("ac_discrete", "tanh", "cartpole")
 
-map_name = "8x8"
-data_name = "local_perturbation_reward_for_test.npy"
+# map_name = "8x8"
+data_name = "action_perturb_test.npy"
 
 if __name__=="__main__":
     # slippery_list = [0, 0.1, 0.2, 0.3]
     # slippery_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
-    slippery_list = [0, 0.1, 0.15, 0.2, 0.3]
-    r_list = [0, 0.15, 0.3]
+    # slippery_list = [0, 0.1, 0.15, 0.2, 0.3]
+    r_list = [0, 0.1, 0.2, 0.3, 0.4]
 
     # r_list = [0, 0.05, 0.1, 0.15, 0.2]
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
@@ -41,7 +41,7 @@ if __name__=="__main__":
     #                     [0, 0.33, 0.33, 0.33],
     #                     [0.25, 0.25, 0.25, 0.25]
     #                     ]
-    transit_prob_list = [None]
+    # transit_prob_list = [None]
 
     total_reward = np.load(os.path.join(save_simulation, data_name))
     print(total_reward.shape)

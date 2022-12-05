@@ -35,8 +35,8 @@ class DQN(Model):
     def __init__(self, action_kind):
         super(DQN, self).__init__()
 
-        self.h1 = Dense(128, activation='tanh')
-        self.h2 = Dense(128, activation='tanh')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.q = Dense(action_kind)
 
 
@@ -55,8 +55,8 @@ class DQNagent(object):
         self.GAMMA = 0.99
         self.BATCH_SIZE = 100
         self.BUFFER_SIZE = 20000
-        self.ACTOR_LEARNING_RATE = 0.00003
-        self.DQN_LEARNING_RATE = 0.0003
+        self.ACTOR_LEARNING_RATE = 0.0001
+        self.DQN_LEARNING_RATE = 0.001
         self.TAU = 0.005
 
         self.STEPS_PER_EPOCH = 500
@@ -203,7 +203,7 @@ class DQNagent(object):
         self.pess_dqn.save_weights(os.path.join(save_path, "pess_dqn.h5"))
 
 
-    def test(self):
+    def test(self, perturb = 0):
         same_count = 0
         diff_count = 0
         
@@ -213,23 +213,21 @@ class DQNagent(object):
             state, _ = self.env.reset()
 
             while not done:
-                action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
-                action = action.numpy()[0]
-
-                pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
-                pess_action = pess_action.numpy()[0]
-
-                if action == pess_action:
-                    same_count += 1
+                p = np.random.rand()
+                if p < perturb:
+                    action = self.env.action_space.sample()
                 else:
-                    diff_count += 1
+                    action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)
+                    action = action.numpy()[0]
 
-                # if ep_time % 100 == 0:
-                #     print("Action : ", action)
-                #     qs = self.dqn(tf.convert_to_tensor([state], dtype=tf.float32))
-                #     print(qs.numpy())
+                    pess_action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.pess_actor)
+                    pess_action = pess_action.numpy()[0]
 
-                # observe reward, new_state
+                    if action == pess_action:
+                        same_count += 1
+                    else:
+                        diff_count += 1
+
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 done = done or truncated
 
