@@ -84,7 +84,7 @@ class DQNAgent(object):
         # self.EPSILON_DECAY = 0.9995
         # self.EPSILON_MIN = 0.01
 
-        self.NUM_TEST_EPISODES = 10
+        self.NUM_TEST_EPISODES = 100
         
         self.env = env
         self.pess_env = deepcopy(self.env)

@@ -19,7 +19,7 @@ def main():
 
     perturb_list = [0, 0.05, 0.1, 0.15, 0.2,0.25, 0.3]
     # parameter_perturb_list = [-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0]
-    
+
     total_reward = []
 
     for r in R:

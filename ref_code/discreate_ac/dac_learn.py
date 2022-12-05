@@ -35,8 +35,8 @@ class DQN(Model):
     def __init__(self):
         super(DQN, self).__init__()
 
-        self.h1 = Dense(128, activation='relu')
-        self.h2 = Dense(128, activation='relu')
+        self.h1 = Dense(128, activation='tanh')
+        self.h2 = Dense(128, activation='tanh')
         self.q = Dense(1)
 
 
@@ -56,8 +56,8 @@ class DQNagent(object):
         self.GAMMA = 0.99
         self.BATCH_SIZE = 100
         self.BUFFER_SIZE = 20000
-        self.ACTOR_LEARNING_RATE = 0.0001
-        self.DQN_LEARNING_RATE = 0.001
+        self.ACTOR_LEARNING_RATE = 0.00003
+        self.DQN_LEARNING_RATE = 0.0003
         self.TAU = 0.005
 
         self.STEPS_PER_EPOCH = 500
