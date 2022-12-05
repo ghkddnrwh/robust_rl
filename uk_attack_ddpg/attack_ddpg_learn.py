@@ -67,23 +67,24 @@ class DDPGagent(object):
         # 하이퍼파라미터
         self.GAMMA = 0.99
         self.BATCH_SIZE = 100
-        # self.BUFFER_SIZE = 1e6
-        self.BUFFER_SIZE = 20000
+        # self.BUFFER_SIZE = 20000
+        self.BUFFER_SIZE = 1e6
         self.ACTOR_LEARNING_RATE = 1e-4
         self.CRITIC_LEARNING_RATE = 1e-3
-        # self.STEPS_PER_EPOCH = 4000
-        self.STEPS_PER_EPOCH = 200
-        # self.START_STEPS = 10000
-        self.START_STEPS = 200
+        self.STEPS_PER_EPOCH = 1000
+        # self.STEPS_PER_EPOCH = 200
+        self.START_STEPS = 10000
+        # self.START_STEPS = 200
         self.UPDATE_AFTER = 1000
         self.UPDATE_EVERY = 50
-        # self.MAX_EP_LEN = 1000
-        self.MAX_EP_LEN = 200
+        # self.MAX_EP_LEN = 200
+        self.MAX_EP_LEN = 1000
         self.TAU = 0.005
-        self.EPOCHS = 400
-        # self.EPOCHS = 10
+        # self.EPOCHS = 400
+        self.EPOCHS = 3000
         self.R = R
-        self.PESS_STEP = 5000
+        # self.PESS_STEP = 5000
+        self.PESS_STEP = 300000
 
         self.NUM_TEST_EPISODES = 30
         
@@ -262,8 +263,9 @@ class DDPGagent(object):
         pess_pre_noise = np.zeros(self.action_dim)
 
         for current_step in range(total_steps):
-            exact_state = self.env.get_exact_state()
-            self.pess_env.set_state(exact_state)
+            # exact_state = self.env.get_exact_state()
+            # self.pess_env.set_state(exact_state)
+            self.pess_env = deepcopy(self.env)
 
             action = self.actor(tf.convert_to_tensor([state], dtype=tf.float32))
             action = action.numpy()[0]
@@ -278,30 +280,30 @@ class DDPGagent(object):
 
             next_state, reward, done, truncated, _ = self.env.step(action)
             pess_next_state, pess_reward, pess_done, pess_truncated, _ = self.pess_env.step(pess_action)
-
-            done = done or truncated
-            pess_done = pess_done or pess_truncated
             pess_reward = - pess_reward
-            # pess_reward = pess_reward
-            time += 1
-            done = False if time == self.MAX_EP_LEN else done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
-            pess_done = False if time == self.MAX_EP_LEN else pess_done           # pendulum에서는 문제없음 다른 환경은 확인해보기 ex 특정 스텝에 도달하면 환경이 done 시그널을 True로 바꿔서 내보내는지 또 그게 환경에 어떤 영향을 미치는지
+
+            state = state.astype(np.float32)
+            next_state = next_state.astype(np.float32)
+            pess_next_state = pess_next_state.astype(np.float32)
             self.buffer.add_buffer(state, action, reward, next_state, done, pess_action, pess_reward, pess_next_state, pess_done)
 
             pre_noise = noise
             pess_pre_noise = pess_noise
             state = next_state
+            time += 1
             episode_reward += reward
             pess_episode_reward += pess_reward
 
-            if pess_done:
+            if pess_done or pess_truncated:
                 self.pess_env.reset()
 
-            if done or (time == self.MAX_EP_LEN):
+            if done or truncated:
                 episode_time += 1
                 self.save_epi_reward.append(episode_reward)
                 self.pess_save_epi_reward.append(pess_episode_reward)
-                print("Action: ", action, "Pess Action: ", pess_action)
+                # print("Action: ", action, "Pess Action: ", pess_action)
+                distance = np.linalg.norm(action - pess_action)
+                print("Distance: ", distance)
                 print("Episode Time: ", episode_time, 'Reward: ', episode_reward, "Pess Reward: ", pess_episode_reward, 'Time: ', time, 'Current Step: ', current_step + 1)
                 state, _ = self.env.reset()
                 self.pess_env.reset()

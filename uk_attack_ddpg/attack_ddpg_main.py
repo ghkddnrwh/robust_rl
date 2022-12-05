@@ -6,6 +6,7 @@
 import gym
 from attack_ddpg_learn import DDPGagent
 import numpy as np
+import pickle
 
 import os
 
@@ -16,10 +17,11 @@ def main():
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
-        env_name = 'Pendulum-v1'
+        env_name = 'Walker2d-v4'
         train_num = 1
-        total_reward = []    
-        total_save_path = os.path.join("test", "pendul", "deepcopy_more_trial", env_name, simulation_name)
+        episode_train_reward = []
+        episode_test_reward = [] 
+        total_save_path = os.path.join("test", "test", "test4", env_name, simulation_name)
         for train_time in range(train_num):
             save_path = os.path.join(total_save_path, "trial" + str(train_time))
             try:
@@ -33,8 +35,6 @@ def main():
                 return 0
 
             env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
-            # pess_env = gym.make(env_name)  # 환경으로 OpenAI Gym의 pendulum-v0 설정
-
             agent = DDPGagent(env, r)   # A2C 에이전트 객체
 
         # 학습 진행
@@ -42,12 +42,14 @@ def main():
             agent.save_paremeters(save_path)
             test_reward = agent.test(0)
 
-            total_reward.append(reward)
+            episode_train_reward.append(reward)
+            episode_test_reward.append(test_reward)
 
-        total_reward = np.array(total_reward)
-        print(total_reward)
-        print(test_reward)
-        np.savetxt(os.path.join(total_save_path, "reward.txt"), total_reward)
+        print(episode_train_reward)
+        print(episode_test_reward)
+        with open(os.path.join(total_save_path, "train_reward.pkl") ,'wb') as f:
+            pickle.dump(episode_train_reward,f)
+        np.savetxt(os.path.join(total_save_path, "reward.txt"), episode_test_reward)
 
 if __name__=="__main__":
     main()
