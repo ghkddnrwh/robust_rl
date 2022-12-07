@@ -219,16 +219,15 @@ class DDPGagent(object):
                 else:
                     action = self.actor(tf.convert_to_tensor([state], dtype=tf.float32))
                     action = action.numpy()[0]
-                # pess_action = self.pess_actor(tf.convert_to_tensor([state], dtype=tf.float32))
-                # pess_action = pess_action.numpy()[0]
-                # random_action = self.env.action_space.sample()
+                    pess_action = self.pess_actor(tf.convert_to_tensor([state], dtype=tf.float32))
+                    pess_action = pess_action.numpy()[0]
+                    random_action = self.env.action_space.sample()
 
-                # pess_dis = np.sqrt(np.sum((action - pess_action)**2))
-                # random_dis = np.sqrt(np.sum((action - random_action)**2))
+                    pess_dis = np.linalg.norm(action - pess_action)
+                    random_dis = np.linalg.norm(action - random_action)
 
-                # pess_distance.append(pess_dis)
-                # random_distance.append(random_dis)
-                # worst_distance.append(np.abs(action) + 2)
+                    pess_distance.append(pess_dis)
+                    random_distance.append(random_dis)
 
                 next_state, reward, done, truncated, _ = self.env.step(action)
                 done = done or truncated
@@ -240,9 +239,8 @@ class DDPGagent(object):
             self.save_epi_test_reward.append(episode_reward)
             print('Episode: ', ep+1, 'Time: ', time, 'Reward: ', episode_reward)
 
-        # print("Pess Distance : ", np.mean(np.array(pess_distance)))
-        # print("Random Distance : ", np.mean(np.array(random_distance)))
-        # print("Worst Distance : ", np.mean(np.array(worst_distance)))
+        print("Pess Distance : ", np.mean(np.array(pess_distance)))
+        print("Random Distance : ", np.mean(np.array(random_distance)))
 
         return np.mean(self.save_epi_test_reward)
 
