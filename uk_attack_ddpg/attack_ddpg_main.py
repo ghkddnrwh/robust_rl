@@ -13,15 +13,15 @@ import os
 def main():
     # R = [0, 0.01]
     # R = [0, 0.01, 0.02, 0.03]
-    R = [0]
+    R = [0, 0.1, 0.2]
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
         env_name = 'Walker2d-v4'
-        train_num = 1
+        train_num = 5
         episode_train_reward = []
         episode_test_reward = [] 
-        total_save_path = os.path.join("test", "test", "test4", env_name, simulation_name)
+        total_save_path = os.path.join("mujoco", "ddpg", "walker", env_name, simulation_name)
         for train_time in range(train_num):
             save_path = os.path.join(total_save_path, "trial" + str(train_time))
             try:
