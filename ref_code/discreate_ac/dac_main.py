@@ -8,16 +8,16 @@ import gym
 import os
 
 def main():
-    R = [0, 0.1, 0.2, 0.3]
+    R = [0]
 
     for r in R:
         simulation_name = "Robust_RL_R=" + str(r)
-        env_name = 'MountainCar-v0'
+        env_name = 'Acrobot-v1'
 
         train_num = 5
         episode_train_reward = []
         episode_test_reward = []
-        total_save_path = os.path.join("test", "tanh", "mountain_car2", env_name, simulation_name)
+        total_save_path = os.path.join("test", "test", "acrobot1", env_name, simulation_name)
 
         for train_time in range(train_num):
             save_path = os.path.join(total_save_path, "trial" + str(train_time))

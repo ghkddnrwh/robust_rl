@@ -68,7 +68,7 @@ class DQNagent(object):
         self.PESS_STEP = 5000
         self.START_STEP = 50000
 
-        self.TEST_STEP = 10
+        self.TEST_STEP = 100
 
         self.env = env
         self.pess_env = deepcopy(env)
