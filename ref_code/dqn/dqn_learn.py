@@ -60,7 +60,7 @@ class DQNagent(object):
         self.TAU = 0.005
 
         self.STEPS_PER_EPOCH = 200
-        self.UPDATE_AFTER = 50000
+        self.UPDATE_AFTER = 1000
         self.UPDATE_EVERY = 50
         self.EPOCHS = 250
         # self.MAX_EP_LEN = 500
@@ -263,6 +263,7 @@ class DQNagent(object):
 
         for current_step in range(int(total_steps)):
             self.pess_env = deepcopy(self.env)
+            self.env.render()
             
             if current_step > self.START_STEP:
                 action, _ = self.get_policy_action(tf.convert_to_tensor([state], dtype=tf.float32), self.actor)

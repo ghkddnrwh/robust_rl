@@ -18,6 +18,7 @@ plt.plot(a[3+10])
 plt.plot(a[4+10])
 plt.show()
 
+
 # random.seed(0)
 # env = gym.make("Ant-v4")
 # state, _ = env.reset(seed = 0)
@@ -46,20 +47,20 @@ plt.show()
 # print(action)
 
 
-random.seed(0)
+# random.seed(0)
 
-env = gym.make("Ant-v4")
-state, _ = env.reset(seed = 0)
+# env = gym.make("Ant-v4")
+# state, _ = env.reset(seed = 0)
 
-print(state)
+# print(state)
 
-action = env.action_space.sample()
-state, _, _, _, _ = env.step(action)
+# action = env.action_space.sample()
+# state, _, _, _, _ = env.step(action)
 
-print(action)
-print(state)
+# print(action)
+# print(state)
 
-print("Done")
+# print("Done")
 
 # state_record = []
 # pess_state_record = []
