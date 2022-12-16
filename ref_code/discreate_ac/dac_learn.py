@@ -35,8 +35,8 @@ class DQN(Model):
     def __init__(self):
         super(DQN, self).__init__()
 
-        self.h1 = Dense(64, activation='relu')
-        self.h2 = Dense(64, activation='relu')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.q = Dense(1)
 
 
@@ -64,7 +64,7 @@ class DQNagent(object):
         self.UPDATE_AFTER = 1000
         self.UPDATE_EVERY = 50
         # self.EPOCHS = 120
-        self.EPOCHS = 30
+        self.EPOCHS = 40
         # self.MAX_EP_LEN = 500
         self.R = R
         self.PESS_STEP = 5000
@@ -169,9 +169,6 @@ class DQNagent(object):
 
     ## computing TD target: y_k = r_k + gamma* max Q(s_k+1, a)
     def td_target(self, rewards, v_target_qs, dones, r_target_qs, r):
-        # v_max_q = np.max(v_target_qs, axis = 1, keepdims=True)
-        # 얘를 min으로 할지 아니면 max로 할지 생각해보기
-        # r_min_q = np.min(r_target_qs, axis = 1, keepdims=True)
         y_k = np.zeros(v_target_qs.shape)
         for i in range(v_target_qs.shape[0]): # number of batch
             if dones[i]:

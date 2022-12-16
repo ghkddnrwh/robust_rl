@@ -16,8 +16,8 @@ class Actor(Model):
     def __init__(self, action_kind):
         super(Actor, self).__init__()
 
-        self.h1 = Dense(64, activation='relu')
-        self.h2 = Dense(64, activation='relu')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.c = Dense(action_kind)
 
 
@@ -34,8 +34,8 @@ class DQN(Model):
     def __init__(self):
         super(DQN, self).__init__()
 
-        self.h1 = Dense(64, activation='relu')
-        self.h2 = Dense(64, activation='relu')
+        self.h1 = Dense(128, activation='relu')
+        self.h2 = Dense(128, activation='relu')
         self.q = Dense(1)
 
 
